@@ -235,4 +235,7 @@ def calculate_parasite_density(
     }
 
 
+stage_map ={"red blood cell": 0, "trophozoite": 1, "schizont": 2, "ring": 3, "difficult": 4,"gametocyte":5,"leukocyte":6}  # Example mapping
+
  
+
