@@ -234,37 +234,5 @@ def calculate_parasite_density(
         "all_run_results": all_run_results,
     }
 
-# --- Example Usage ---
-
-dummy_model_path_asexual = "path to yolov9cbestsofar 130epocs no finetune.pt"
-dummy_model_path_rbc = "path to rbc counter.pt"
-dummy_model_path_stage ="path to yolov9 for segmenting parasit stages.pt"
-
-
-image_paths = []#list of images
-
-# 1. Load your ACTUAL YOLO models
-asexual_model = YOLO(dummy_model_path_asexual)
-rbc_model = YOLO(dummy_model_path_rbc)
-stage_model = YOLO(dummy_model_path_stage) # Optional
-
-
-#  Define the mapping for stage model classes (if using)
-stage_map ={"red blood cell": 0, "trophozoite": 1, "schizont": 2, "ring": 3, "difficult": 4,"gametocyte":5,"leukocyte":6}  # Example mapping
-
- 
-
-# 3. Run the calculation 
-
-# Use the loaded model objects
-results = calculate_parasite_density(
-        image_list=image_paths,
-        asexual_parasite_model=asexual_model,
-        rbc_model=rbc_model,
-        stage_specific_model=stage_model, # Set to None if not using
-        target_rbc_count=1000,             # Lower target for faster testing
-        repetitions=5,                    # Fewer repetitions for testing
-        stage_class_map=stage_map         # Provide the map if using stage_model
-    )
 
  
