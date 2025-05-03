@@ -7,7 +7,7 @@ from ultralytics import YOLO
 import json
 import numpy as np # For averaging
 import torch # YOLO results might use torch tensors
-
+stage_map ={"red blood cell": 0, "trophozoite": 1, "schizont": 2, "ring": 3, "difficult": 4,"gametocyte":5,"leukocyte":6}
 # --- Provided Augmentation Function ---
 def augment_microscopic_image(image_path_or_bytes, contrast_factor=(1.0, 2.0), sharpness_factor=(1.0, 3.0), random_saturation_range=(0.5, 1.5)):
     """
@@ -46,6 +46,8 @@ def augment_microscopic_image(image_path_or_bytes, contrast_factor=(1.0, 2.0), s
         enhancer_saturation = ImageEnhance.Color(img)
         img = enhancer_saturation.enhance(saturation)
 
+
+        print('sucess augmentation')
         # Return the augmented RGB image
         return img
 
@@ -55,7 +57,7 @@ def augment_microscopic_image(image_path_or_bytes, contrast_factor=(1.0, 2.0), s
     except Exception as e:
         print(f"An error occurred during augmentation: {e}")
         return None
-
+        
 
 # --- Main Counting Function ---
 def calculate_parasite_density(
@@ -63,11 +65,11 @@ def calculate_parasite_density(
     asexual_parasite_model, # Expects a loaded YOLO model object
     rbc_model,             # Expects a loaded YOLO model object
     stage_specific_model=None, # Expects a loaded YOLO model object or None
-    target_rbc_count=1000,
+    target_rbc_count=500,
     repetitions=5,
     parasite_class_id=0,
     rbc_class_id=0,
-    stage_class_map=None # Example: {0: 'ring', 1: 'trophozoite', 2: 'schizont'}
+    stage_class_map=stage_map # Example: {0: 'ring', 1: 'trophozoite', 2: 'schizont'}
 ):
     """
     Calculates malaria parasite density using YOLO models, applying augmentation,
@@ -88,6 +90,7 @@ def calculate_parasite_density(
         dict: Results including average parasitemia, density, stage counts, and run details.
               Returns None on critical errors.
     """
+    print("Stage map received:", stage_map)
     if not image_list:
         print("Error: Image list cannot be empty.")
         return None
@@ -107,7 +110,7 @@ def calculate_parasite_density(
 
 
     for rep in range(repetitions):
-    
+        print(f"--- Starting run {rep+1} of {repetitions} ---")
         run_parasite_count = 0
         run_rbc_count = 0
         run_stage_counts_raw = Counter() # Stores {class_id: count} for this run
@@ -155,6 +158,7 @@ def calculate_parasite_density(
                     detected_classes = rbc_results[0].boxes.cls.int().tolist()
                     rbcs_in_image = detected_classes.count(rbc_class_id)
                     run_rbc_count += rbcs_in_image
+                    print(f"RBCs in image: {run_rbc_count}") # Debugging line to check RBC count
                 else:
                     rbcs_in_image = 0
             except Exception as e:
@@ -172,6 +176,7 @@ def calculate_parasite_density(
                         stages_in_image = Counter(detected_classes)
                         
                         run_stage_counts_raw.update(stages_in_image)
+                        print(f"Stages in image: {stages_in_image}") # Debugging line to check stage counts
                             
             except Exception as e:
                 pass
@@ -235,7 +240,7 @@ def calculate_parasite_density(
     }
 
 
-stage_map ={"red blood cell": 0, "trophozoite": 1, "schizont": 2, "ring": 3, "difficult": 4,"gametocyte":5,"leukocyte":6}  # Example mapping
+  # Example mapping
 
  
 

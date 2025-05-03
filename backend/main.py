@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from ultralytics import YOLO
 from typing import List
 from concurrent.futures import ProcessPoolExecutor
+import asyncio  # Import asyncio for task handling
 from functions import calculate_parasite_density, stage_map  # import your existing function & map
 
 # Configuration
@@ -13,14 +14,14 @@ UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Load models once at startup
-ASEXUAL_MODEL_PATH = "./rbc counter.pt"
+ASEXUAL_MODEL_PATH = "./yolov9cbestsofar 130epocs no finetune.pt"
 RBC_MODEL_PATH     = "./rbc counter.pt"
-STAGE_MODEL_PATH   = "./rbc counter.pt"
+STAGE_MODEL_PATH   = "./yolov9 for segmenting parasit stages.pt"
 
 asexual_model = YOLO(ASEXUAL_MODEL_PATH)
 rbc_model     = YOLO(RBC_MODEL_PATH)
 stage_model   = YOLO(STAGE_MODEL_PATH)
-
+print('yes!')  # Debugging line to check if models are loaded
 # FastAPI app
 app = FastAPI(title="Parasite Density API")
 
@@ -46,17 +47,17 @@ async def submit_images(files: List[UploadFile] = File(...)):
 
     # Submit to ProcessPoolExecutor and wait for the result
     task_id = str(uuid.uuid4())
-    loop = app.state.loop  # Accessing the FastAPI event loop
-    result = await loop.run_in_executor(
+    print(f"Task ID: {task_id}") # Debugging line to check task ID
+    # Use asyncio to run the blocking task in an executor
+    result = await asyncio.get_event_loop().run_in_executor(
         executor,
         calculate_parasite_density,
         saved_paths,  # image_list
         asexual_model,  # asexual_parasite_model
         rbc_model,  # rbc_model
         stage_model,  # stage_specific_model
-        1000,  # target_rbc_count
+        500,  # target_rbc_count
         5,  # repetitions
-        stage_map  # stage_class_map
     )
 
     # Return result as soon as it's done
