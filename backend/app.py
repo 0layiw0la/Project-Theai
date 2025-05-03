@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from ultralytics import YOLO
 from typing import List
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from your_module import calculate_parasite_density, stage_map  # import your existing function & map
+from functions import calculate_parasite_density, stage_map  # import your existing function & map
 
 # Configuration
 UPLOAD_DIR = "uploads"
