@@ -4,9 +4,6 @@ import Logo from "../components/Logo";
 export default function LandingPage(){
     const navigate = useNavigate();
 
-    const handleClick = () => {
-        navigate("/upload")
-    }
 
     return(
         <>
@@ -16,9 +13,9 @@ export default function LandingPage(){
             <   h3 className=" text-[50px] text-center">Welcome to</h3>
                 <p className="text-[30px] md:text-[50px] font-script text-main">Project Theai</p>
             </div>
-            <div>
-                <button className="px-[60px] py-[20px] bg-main text-accent text-[25px] font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer" onClick={handleClick}>Get Started</button>
-                <button className="px-[60px] py-[20px] bg-accent text-main text-[25px] font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer ml-[20px]" onClick={() => navigate("/about")}>About</button>
+            <div className="flex gap-20">
+                <button className="w-[180px] py-[20px] bg-main text-accent text-[20px] font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer" onClick={() => navigate("/upload")}>+ New Test</button>
+                <button className="w-[180px] py-[20px] bg-main text-accent text-[20px] font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer" onClick={() => navigate("/tasks")}>Existing Tests</button>
             </div>
         </section>
         </>
