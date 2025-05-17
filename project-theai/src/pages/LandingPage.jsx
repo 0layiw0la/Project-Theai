@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router"
+import { useNavigate } from "react-router";
+import Logo from "../components/Logo";
 
 export default function LandingPage(){
     const navigate = useNavigate();
@@ -9,12 +10,16 @@ export default function LandingPage(){
 
     return(
         <>
+        <Logo />
         <section className="min-h-screen flex flex-col justify-center items-center gap-[120px] md:gap-[80px]">
             <div className="text-center flex flex-col md:flex-row md:gap-[10px]">
-            <h3 className=" text-[50px] text-center">Welcome to</h3>
-            <p className="text-[30px] md:text-[50px] font-script text-main">Project Theai</p>
+            <   h3 className=" text-[50px] text-center">Welcome to</h3>
+                <p className="text-[30px] md:text-[50px] font-script text-main">Project Theai</p>
             </div>
-            <button className="px-[60px] py-[20px] bg-main text-accent text-[25px] font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer" onClick={handleClick}>Get Started</button>
+            <div>
+                <button className="px-[60px] py-[20px] bg-main text-accent text-[25px] font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer" onClick={handleClick}>Get Started</button>
+                <button className="px-[60px] py-[20px] bg-accent text-main text-[25px] font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer ml-[20px]" onClick={() => navigate("/about")}>About</button>
+            </div>
         </section>
         </>
     )
