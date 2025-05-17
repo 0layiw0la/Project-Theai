@@ -1,23 +1,24 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import Logo from "../components/Logo";
 
 
 export default function UploadPage(){
-
+    const navigate = useNavigate();
     const handleSubmit = async (e) => {
     e.preventDefault();
     if (!imgs || imgs.length === 0) return;
     const formData = new FormData();
 
     for (let i = 0; i < imgs.length; i++) {
-        formData.append("images", imgs[i]);
+        formData.append("files", imgs[i]);
     }
 
     formData.append("patientName", patientName);
     formData.append("date", date);
 
     try {
-        const response = await fetch("/api/upload", {
+        const response = await fetch("http://127.0.0.1:8000/submit", {
         method: "POST",
         body: formData
         });
@@ -26,9 +27,12 @@ export default function UploadPage(){
         return;
         }
         console.log("Upload succeeded");
+        const data = await response.json();
+        navigate(`/tasks`);
     } catch (error) {
         console.error(error);
     }
+    
     };
 
 

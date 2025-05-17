@@ -1,41 +1,47 @@
 import os
 import uuid
-import io
+import asyncio
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
-from ultralytics import YOLO
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 from concurrent.futures import ProcessPoolExecutor
-import asyncio  # Import asyncio for task handling
-from functions import calculate_parasite_density, stage_map  # import your existing function & map
 
-# Configuration
+from ultralytics import YOLO
+from functions import calculate_parasite_density
+
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Load models once at startup
 ASEXUAL_MODEL_PATH = "./yolov9cbestsofar 130epocs no finetune.pt"
-RBC_MODEL_PATH     = "./rbc counter.pt"
-STAGE_MODEL_PATH   = "./yolov9 for segmenting parasit stages.pt"
+RBC_MODEL_PATH = "./rbc counter.pt"
+STAGE_MODEL_PATH = "./yolov9 for segmenting parasit stages.pt"
 
 asexual_model = YOLO(ASEXUAL_MODEL_PATH)
-rbc_model     = YOLO(RBC_MODEL_PATH)
-stage_model   = YOLO(STAGE_MODEL_PATH)
-print('yes!')  # Debugging line to check if models are loaded
-# FastAPI app
+rbc_model = YOLO(RBC_MODEL_PATH)
+stage_model = YOLO(STAGE_MODEL_PATH)
+
 app = FastAPI(title="Parasite Density API")
 
-# Executor for background tasks (leave one CPU free)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 executor = ProcessPoolExecutor(max_workers=max(1, os.cpu_count() - 1))
 
-# In-memory store for futures: {task_id: Future}
-tasks = {}
+# Store task state
+task_registry = {}
 
-@app.post("/submit/")
+@app.post("/submit")
 async def submit_images(files: List[UploadFile] = File(...)):
     if not files:
         raise HTTPException(400, "No files uploaded")
 
+    task_id = str(uuid.uuid4())
     saved_paths = []
     for f in files:
         ext = os.path.splitext(f.filename)[1]
@@ -45,26 +51,37 @@ async def submit_images(files: List[UploadFile] = File(...)):
             out.write(await f.read())
         saved_paths.append(target)
 
-    # Submit to ProcessPoolExecutor and wait for the result
-    task_id = str(uuid.uuid4())
-    print(f"Task ID: {task_id}") # Debugging line to check task ID
-    # Use asyncio to run the blocking task in an executor
-    result = await asyncio.get_event_loop().run_in_executor(
-        executor,
-        calculate_parasite_density,
-        saved_paths,  # image_list
-        asexual_model,  # asexual_parasite_model
-        rbc_model,  # rbc_model
-        stage_model,  # stage_specific_model
-        500,  # target_rbc_count
-        5,  # repetitions
-    )
+    task_registry[task_id] = {"status": "PENDING", "result": None}
 
-    # Return result as soon as it's done
-    return JSONResponse({"task_id": task_id, "status": "SUCCESS", "data": result})
+    async def run_task():
+        try:
+            result = await asyncio.get_event_loop().run_in_executor(
+                executor,
+                calculate_parasite_density,
+                saved_paths,
+                asexual_model,
+                rbc_model,
+                stage_model,
+                500,
+                5,
+            )
+            task_registry[task_id]["status"] = "SUCCESS"
+            task_registry[task_id]["result"] = result
+        except Exception as e:
+            task_registry[task_id]["status"] = "FAILED"
+            task_registry[task_id]["result"] = str(e)
+
+    asyncio.create_task(run_task())
+
+    return {"task_id": task_id, "status": "PENDING"}
+
+@app.get("/tasks")
+async def list_tasks():
+    return task_registry
 
 @app.get("/result/{task_id}")
 async def get_result(task_id: str):
-    # In this model, the user directly receives the result when the task is completed, so this can be omitted.
-    # This can be kept for future modifications if needed.
-    raise HTTPException(status_code=404, detail="Result query not supported directly.")
+    task = task_registry.get(task_id)
+    if not task:
+        raise HTTPException(404, "Task ID not found")
+    return task
