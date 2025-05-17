@@ -8,14 +8,14 @@ export default function LandingPage(){
     return(
         <>
         <Logo />
-        <section className="min-h-screen flex flex-col justify-center items-center gap-[120px] md:gap-[80px]">
-            <div className="text-center flex flex-col md:flex-row md:gap-[10px]">
-            <   h3 className=" text-[50px] text-center">Welcome to</h3>
-                <p className="text-[30px] md:text-[50px] font-script text-main">Project Theai</p>
+        <section className=" flex flex-col justify-center items-center gap-[100px] md:gap-[80px] mt-[20vh]">
+            <div className="text-center flex flex-col lg:flex-row md:gap-[10px]">
+                <h3 className=" text-4xl md:text-6xl  text-center">Welcome to</h3>
+                <p className="text-5xl md:text-7xl lg:text-6xl font-script text-main">Project Theai</p>
             </div>
-            <div className="flex gap-20">
-                <button className="w-[180px] py-[20px] bg-main text-accent text-[20px] font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer" onClick={() => navigate("/upload")}>+ New Test</button>
-                <button className="w-[180px] py-[20px] bg-main text-accent text-[20px] font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer" onClick={() => navigate("/tasks")}>Existing Tests</button>
+            <div className="flex gap-7">
+                <button className="w-[40vw] md:w-[30vw] lg:w-[20vw] py-[20px] bg-main text-accent text-lg font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer" onClick={() => navigate("/upload")}>+ New Test</button>
+                <button className="w-[40vw] md:w-[30vw] lg:w-[20vw] py-[20px] bg-main text-accent text-[20px] font-poppins rounded-lg hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer" onClick={() => navigate("/tasks")}>Existing Tests</button>
             </div>
         </section>
         </>
