@@ -1,16 +1,16 @@
-import './App.css'
+import { BrowserRouter as Router } from 'react-router-dom';
+import GeneralRouter from './components/GeneralRouter';
 import ErrorBoundary from './components/ErrorBoundary'
-import GeneralRouter from './components/GeneralRouter'
+import { AuthProvider } from './contexts/AuthContext';
 
-export default function App() {
-
+function App() {
   return (
-    <>
     <ErrorBoundary>
-      <GeneralRouter/>
-    </ErrorBoundary> 
-    </>
-  )
+    <AuthProvider>
+        <GeneralRouter />
+    </AuthProvider>
+    </ErrorBoundary>
+  );
 }
 
-
+export default App;

@@ -1,45 +1,52 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import Logo from "../components/Logo";
-
+import { useAuth } from "../contexts/AuthContext";
 
 export default function UploadPage(){
     const navigate = useNavigate();
-    const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!imgs || imgs.length === 0) return;
-    const formData = new FormData();
-
-    for (let i = 0; i < imgs.length; i++) {
-        formData.append("files", imgs[i]);
-    }
-
-    formData.append("patientName", patientName);
-    formData.append("date", date);
-
-    try {
-        const response = await fetch("http://127.0.0.1:8000/submit", {
-        method: "POST",
-        body: formData
-        });
-        if (!response.ok) {
-        console.error("Upload failed");
-        return;
-        }
-        console.log("Upload succeeded");
-        const data = await response.json();
-        navigate(`/tasks`);
-    } catch (error) {
-        console.error(error);
-    }
+    const { token } = useAuth();
     
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!imgs || imgs.length === 0) return;
+        const formData = new FormData();
+
+        for (let i = 0; i < imgs.length; i++) {
+            formData.append("files", imgs[i]);
+        }
+
+        formData.append("patientName", patientName);
+        formData.append("date", date);
+        console.log("Form data:", formData);
+
+        try {
+            const response = await fetch("http://127.0.0.1:8000/submit", {
+                method: "POST",
+                headers: {
+                    // Include authorization header with token
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+            
+            if (!response.ok) {
+                console.error("Upload failed");
+                return;
+            }
+            
+            console.log("Upload succeeded");
+            const data = await response.json();
+            navigate(`/tasks`);
+        } catch (error) {
+            console.error(error);
+        }
     };
 
-
+    // Rest of your component stays the same
     const [textInput, setTextInput] = useState({
         patientName: "",
         date: "",
-
     });
 
     const [imgs, setImgs] = useState(null);
@@ -73,7 +80,7 @@ export default function UploadPage(){
     }
     return(
         <>
-        <Logo />
+        <Logo showHomeButton={true}/>
          <section className="mt-[40px] min-h-screen m-[20px]">
             <div className="flex flex-col md:flex-row justify-around p-[20px] gap-[10px]"> 
                 <div className="flex flex-col gap-[5px] w-[300px]">
