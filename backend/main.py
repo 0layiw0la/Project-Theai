@@ -15,7 +15,7 @@ from passlib.context import CryptContext
 from sqlalchemy import create_engine, Column, String, DateTime, JSON, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-
+from dotenv import load_dotenv
 from ultralytics import YOLO
 from functions import calculate_parasite_density
 
@@ -50,7 +50,8 @@ class Task(Base):
 Base.metadata.create_all(bind=engine)
 
 # Auth
-SECRET_KEY = "YOUR_SECRET_KEY"  # Change this to a secure random key in production!
+load_dotenv()  
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "YOUR_SECRET_KEY")  
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
