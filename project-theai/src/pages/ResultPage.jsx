@@ -161,17 +161,6 @@ export default function ResultPage() {
                         )}
                     </div>
                     
-                    {/* Details Accordion */}
-                    <details className="border rounded-lg mb-4">
-                        <summary className="p-4 cursor-pointer font-medium bg-gray-50 rounded-t-lg">
-                            View Detailed Results
-                        </summary>
-                        <div className="p-4 bg-white">
-                            <pre className="whitespace-pre-wrap overflow-auto text-sm font-mono bg-gray-50 p-4 rounded">
-                                {JSON.stringify(result, null, 2)}
-                            </pre>
-                        </div>
-                    </details>
                     
                     <div className="flex justify-between mt-6">
                         <button 
