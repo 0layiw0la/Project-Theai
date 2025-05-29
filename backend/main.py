@@ -16,6 +16,10 @@ from sqlalchemy.orm import sessionmaker, Session
 from dotenv import load_dotenv
 from ultralytics import YOLO
 from functions import calculate_parasite_density
+from celery_app import celery_app
+from tasks import process_malaria_images
+
+
 
 # SQLAlchemy setup
 DATABASE_URL = "sqlite:///./theai.db"
@@ -85,7 +89,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-executor = ProcessPoolExecutor(max_workers=max(1, os.cpu_count() - 1))
+
 
 # Authentication utilities
 def verify_password(plain_password, hashed_password):
@@ -205,36 +209,9 @@ async def submit_images(files: List[UploadFile] = File(...),
     db.add(new_task)
     db.commit()
 
-    async def run_task():
-        try:
-            result = await asyncio.get_event_loop().run_in_executor(
-                executor,
-                calculate_parasite_density,
-                saved_paths,
-                asexual_model,
-                rbc_model,
-                stage_model,
-                500,
-                5,
-            )
-            
-            # Update task in DB
-            db_task = db.query(Task).filter(Task.id == task_id).first()
-            if db_task:
-                db_task.status = "SUCCESS"
-                db_task.result = json.dumps(result)
-                db.commit()
-                
-        except Exception as e:
-            # Update task error in DB
-            db_task = db.query(Task).filter(Task.id == task_id).first()
-            if db_task:
-                db_task.status = "FAILED"
-                db_task.result = json.dumps({"error": str(e)})
-                db.commit()
-
-    asyncio.create_task(run_task())
-
+    # Queue the task for processing with Celery
+    process_malaria_images.delay(task_id, saved_paths)
+    
     return {"task_id": task_id, "status": "PENDING"}
 
 @app.get("/tasks")
