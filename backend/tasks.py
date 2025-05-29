@@ -5,12 +5,10 @@ from celery_app import celery_app
 from functions import calculate_parasite_density
 from sqlalchemy.orm import Session
 from ultralytics import YOLO
+from database import SessionLocal, Task
 
 # Load environment variables
 load_dotenv()
-
-# Database imports (you'll need to import these from main.py or create a separate db.py file)
-from main import SessionLocal, Task
 
 # Load models only in the worker process
 asexual_model = YOLO(os.getenv("ASEXUAL_MODEL_PATH"))

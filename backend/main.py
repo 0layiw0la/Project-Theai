@@ -18,55 +18,23 @@ from ultralytics import YOLO
 from functions import calculate_parasite_density
 from celery_app import celery_app
 from tasks import process_malaria_images
+from database import SessionLocal, Task
 
-
-
-# SQLAlchemy setup
-DATABASE_URL = "sqlite:///./theai.db"
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-# Models
-class User(Base):
-    __tablename__ = "users"
-    
-    id = Column(String, primary_key=True)
-    username = Column(String, unique=True, index=True)
-    email = Column(String, unique=True, index=True)
-    hashed_password = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-class Task(Base):
-    __tablename__ = "tasks"
-    
-    id = Column(String, primary_key=True)
-    user_id = Column(String, index=True)
-    status = Column(String, default="PENDING")
-    result = Column(JSON, nullable=True)
-    patient_name = Column(String, nullable=True)
-    date = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    
-# Create tables
-Base.metadata.create_all(bind=engine)
 
 # Auth
 load_dotenv()  
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "YOUR_SECRET_KEY")  
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")  
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
-# Get DB session
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
-
 
 app = FastAPI(title="Parasite Density API")
 
