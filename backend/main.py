@@ -1,6 +1,5 @@
 import os
 import uuid
-import asyncio
 import json
 from datetime import datetime, timedelta
 from typing import List, Optional
@@ -9,7 +8,6 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Header, R
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from concurrent.futures import ProcessPoolExecutor
 import jwt
 from passlib.context import CryptContext
 from sqlalchemy import create_engine, Column, String, DateTime, JSON, Boolean
