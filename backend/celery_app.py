@@ -1,9 +1,12 @@
 from celery import Celery
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 celery_app = Celery(
     "malaria_detection",
-    broker="redis://localhost:6379/0",
-    backend="redis://localhost:6379/0",
+    broker=os.getenv("REDIS_URL"),
+    backend=os.getenv("REDIS_URL"),
     include=["tasks"]
 )
 
@@ -13,4 +16,5 @@ celery_app.conf.update(
     result_serializer="json",
     timezone="UTC",
     enable_utc=True,
+    result_expires=3600,
 )
