@@ -67,17 +67,6 @@ def get_db():
     finally:
         db.close()
 
-# Model paths
-UPLOAD_DIR = "uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-ASEXUAL_MODEL_PATH = "./yolov9cbestsofar 130epocs no finetune.pt"
-RBC_MODEL_PATH = "./rbc counter.pt"
-STAGE_MODEL_PATH = "./yolov9 for segmenting parasit stages.pt"
-
-asexual_model = YOLO(ASEXUAL_MODEL_PATH)
-rbc_model = YOLO(RBC_MODEL_PATH)
-stage_model = YOLO(STAGE_MODEL_PATH)
 
 app = FastAPI(title="Parasite Density API")
 
