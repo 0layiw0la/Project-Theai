@@ -18,7 +18,7 @@ stage_model = YOLO(os.getenv("STAGE_MODEL_PATH"))
 @celery_app.task
 def process_malaria_images(task_id: str, image_paths: list):
     try:
-        # Update task status
+        # Update task status to PROCESSING
         db = SessionLocal()
         task = db.query(Task).filter(Task.id == task_id).first()
         if task:

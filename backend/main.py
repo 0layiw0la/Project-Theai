@@ -10,31 +10,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from passlib.context import CryptContext
-from sqlalchemy import create_engine, Column, String, DateTime, JSON, Boolean
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from ultralytics import YOLO
 from functions import calculate_parasite_density
 from celery_app import celery_app
 from tasks import process_malaria_images
-from database import SessionLocal, Task
+from database import SessionLocal, User, Task, get_db
 
 
 # Auth
 load_dotenv()  
+UPLOAD_DIR = os.getenv("UPLOAD_DIR")
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")  
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 app = FastAPI(title="Parasite Density API")
 
