@@ -1,4 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useNavigate } from "react-router";
+import { useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import LandingPage from "../pages/LandingPage";
 import UploadPage from "../pages/UploadPage";
@@ -7,17 +9,33 @@ import ResultPage from "../pages/ResultPage";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
 
-// Protected route component
+// Protected route component - simplified
 function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { currentUser, loading, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
+  // Only redirect if loading is done and not authenticated
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      navigate('/login', { 
+        replace: true,
+        state: { message: 'Please login to continue.' }
+      });
+    }
+  }, [loading, isAuthenticated, navigate]);
+
+  // Show loading while checking authentication
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-main"></div>
-    </div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-main"></div>
+        <p className="ml-4">Loading...</p>
+      </div>
+    );
   }
-  
-  return isAuthenticated ? children : <Navigate to="/login" />;
+
+  // Show children only if authenticated
+  return isAuthenticated ? children : null;
 }
 
 // Public route - redirects to dashboard if already authenticated

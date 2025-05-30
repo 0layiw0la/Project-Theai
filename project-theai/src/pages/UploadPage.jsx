@@ -36,6 +36,13 @@ export default function UploadPage(){
                 },
                 body: formData
             });
+
+            if (response.status === 401) {
+            localStorage.removeItem('token');
+            alert('Session expired. Please login again.');
+            navigate('/login');
+            return;
+            }
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));

@@ -126,6 +126,16 @@ async def login(login_data: UserLogin, db: Session = Depends(get_db)):
     
     return {"access_token": access_token, "token_type": "bearer"}
 
+@app.get("/validate-token")
+async def validate_token(current_user: User = Depends(get_current_user)):
+    """Validate current token and return user info"""
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "valid": True
+    }
+
 # Task endpoints
 @app.post("/submit")
 async def submit_images(files: List[UploadFile] = File(...), 
