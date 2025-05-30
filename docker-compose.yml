@@ -1,0 +1,49 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=your-super-secret-jwt-key-change-this-in-production
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - DATABASE_URL=sqlite:///./theai.db
+      - UPLOAD_DIR=uploads
+      - ASEXUAL_MODEL_PATH=./yolov9cbestsofar 130epocs no finetune.pt
+      - RBC_MODEL_PATH=./rbc counter.pt
+      - STAGE_MODEL_PATH=./yolov9 for segmenting parasit stages.pt
+    volumes:
+      - ./backend:/app
+      - uploads_data:/app/uploads
+    depends_on:
+      - redis
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  celery-worker:
+    build: ./backend
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=your-super-secret-jwt-key-change-this-in-production
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - DATABASE_URL=sqlite:///./theai.db
+      - UPLOAD_DIR=uploads
+      - ASEXUAL_MODEL_PATH=./yolov9cbestsofar 130epocs no finetune.pt
+      - RBC_MODEL_PATH=./rbc counter.pt
+      - STAGE_MODEL_PATH=./yolov9 for segmenting parasit stages.pt
+    volumes:
+      - ./backend:/app
+      - uploads_data:/app/uploads
+    depends_on:
+      - redis
+    command: celery -A celery_app worker --loglevel=info
+
+volumes:
+  redis_data:
+  uploads_data:

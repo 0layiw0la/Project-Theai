@@ -6,44 +6,60 @@ import { useAuth } from "../contexts/AuthContext";
 export default function UploadPage(){
     const navigate = useNavigate();
     const { token } = useAuth();
+    const [uploading, setUploading] = useState(false);
     
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!imgs || imgs.length === 0) return;
+        if (!imgs || imgs.length === 0) {
+            setImgError("Please select at least one image");
+            return;
+        }
+        
+        setUploading(true);
         const formData = new FormData();
 
+        // Append files with the exact name your backend expects
         for (let i = 0; i < imgs.length; i++) {
             formData.append("files", imgs[i]);
         }
 
-        formData.append("patientName", patientName);
-        formData.append("date", date);
-        console.log("Form data:", formData);
+        // Append form data with exact field names from backend
+        formData.append("patientName", patientName || "");
+        formData.append("date", date || "");
 
         try {
-            const response = await fetch("http://127.0.0.1:8000/submit", {
+            const response = await fetch("http://localhost:8000/submit", {
                 method: "POST",
                 headers: {
-                    // Include authorization header with token
                     'Authorization': `Bearer ${token}`
+                    // Don't set Content-Type when using FormData
                 },
                 body: formData
             });
             
             if (!response.ok) {
-                console.error("Upload failed");
+                const errorData = await response.json().catch(() => ({}));
+                console.error("Upload failed:", errorData);
+                setImgError("Upload failed. Please try again.");
                 return;
             }
             
-            console.log("Upload succeeded");
             const data = await response.json();
+            console.log("Upload succeeded, task_id:", data.task_id);
+            
+            
             navigate(`/tasks`);
+
+            
         } catch (error) {
-            console.error(error);
+            console.error("Network error:", error);
+            setImgError("Network error. Please check your connection.");
+        } finally {
+            setUploading(false);
         }
     };
 
-    // Rest of your component stays the same
+    // Rest of your component logic stays the same
     const [textInput, setTextInput] = useState({
         patientName: "",
         date: "",
@@ -59,25 +75,30 @@ export default function UploadPage(){
         setTextInput({...textInput, [name]: value })
     }
 
-
-
     const handleImageChange = (e) => {
         const validTypes = ["image/jpeg", "image/png", "image/jpg"];
         const files = e.target.files;
+        
+        if (files.length === 0) {
+            setImgError("");
+            setImgs(null);
+            return;
+        }
+        
         for (let i = 0; i < files.length; i++){
            const file = files[i]
            
            if(!validTypes.includes(file.type)){
              return setImgError("Only JPG, JPEG, and PNG formats allowed.")
           }
-          if(file.size > 2 * 1024 * 1024){
-            return setImgError("Image size must be under 2MB.")
+          if(file.size > 5 * 1024 * 1024){ // Increased to 5MB for microscopy images
+            return setImgError("Image size must be under 5MB.")
           }
         }
         setImgs(files);
         setImgError('');
-        
     }
+
     return(
         <>
         <Logo showHomeButton={true}/>
@@ -85,34 +106,90 @@ export default function UploadPage(){
             <div className="flex flex-col md:flex-row justify-around p-[20px] gap-[10px]"> 
                 <div className="flex flex-col gap-[5px] w-[300px]">
                     <label htmlFor="patients-name" className="text-[16px] md:text-[18px] font-[500]">Patient's Name</label>
-                    <input type="text" name="patientName" value={patientName} onChange={handleChange} placeholder="patient's name" className="py-3 px-10 rounded-lg border border-txt focus:outline-none focus:ring-1 focus:ring-complementary transition text-[12px] md:text-[15px] font-roboto"/>
+                    <input 
+                        type="text" 
+                        name="patientName" 
+                        value={patientName} 
+                        onChange={handleChange} 
+                        placeholder="Patient's name (optional)" 
+                        className="py-3 px-10 rounded-lg border border-txt focus:outline-none focus:ring-1 focus:ring-complementary transition text-[12px] md:text-[15px] font-roboto"
+                        disabled={uploading}
+                    />
                 </div>
 
                 <div className="flex flex-col gap-[5px] w-[300px]">
                     <label htmlFor="date" className="text-[16px] md:text-[18px] font-[500]">Date</label>
-                    <input type="date" name="date" value={date} onChange={handleChange} className="py-3 px-10 rounded-lg border focus:outline-none focus:ring-1 focus:ring-complementary transition text-[12px] md:text-[15px] font-roboto"/>
+                    <input 
+                        type="date" 
+                        name="date" 
+                        value={date} 
+                        onChange={handleChange} 
+                        className="py-3 px-10 rounded-lg border focus:outline-none focus:ring-1 focus:ring-complementary transition text-[12px] md:text-[15px] font-roboto"
+                        disabled={uploading}
+                    />
                 </div>
             </div>
 
             <div className="px-[2vw] flex flex-col justify-center items-center mt-[50px]">
-                <h1 className="text-[30px] md:text-[35px] font-poppins font-[600]">Upload Image</h1>
-                <p className="text-center mt-[10px] text-[16px] md:text-[19px]">Upload a clear microscopic image of the blood smear.</p>
+                <h1 className="text-[30px] md:text-[35px] font-poppins font-[600]">Upload Images</h1>
+                <p className="text-center mt-[10px] text-[16px] md:text-[19px]">Upload clear microscopic images of blood smears for malaria detection.</p>
 
-                <input type="file" accept="image/*" multiple onChange={handleImageChange} className="px-[2vw] py-[100px] mt-[20px] rounded-[20px] border border-dashed focus:outline-none focus:ring-1 focus:ring-main transition text-[16px] md:text-[18px]" required/>
+                <input 
+                    type="file" 
+                    accept="image/*" 
+                    multiple 
+                    onChange={handleImageChange} 
+                    className="px-[2vw] py-[100px] mt-[20px] rounded-[20px] border border-dashed focus:outline-none focus:ring-1 focus:ring-main transition text-[16px] md:text-[18px]" 
+                    required
+                    disabled={uploading}
+                />
 
-                {imgs && (
-                    <div className="grid grid-cols-4 md:grid-cols-5 gap-4 mt-[5vh]">
-                        {Array.from(imgs).map((img,index) => (
-                            <img
-                            key = {index}
-                            src = {URL.createObjectURL(img)}
-                            alt="preview"
-                            className = "w-[50px] h-auto" />
-                        ))}
-                     </div>
+                {imgErrror && (
+                    <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                        {imgErrror}
+                    </div>
                 )}
 
-                <button onClick={handleSubmit} className="px-[90px] md:px-[110px] py-[10px] bg-main text-accent text-[25px] font-poppins rounded-lg mt-[30px] hover:bg-complementary transition duration-300 ease-in-out transform hover:scale-105 cursor-pointer">Start Analysis</button>
+                {imgs && (
+                    <div className="mt-[5vh]">
+                        <p className="text-center mb-4 font-medium">
+                            {imgs.length} image{imgs.length > 1 ? 's' : ''} selected
+                        </p>
+                        <div className="grid grid-cols-4 md:grid-cols-5 gap-4">
+                            {Array.from(imgs).map((img,index) => (
+                                <div key={index} className="relative">
+                                    <img
+                                        src={URL.createObjectURL(img)}
+                                        alt={`Preview ${index + 1}`}
+                                        className="w-[80px] h-[80px] object-cover rounded border"
+                                    />
+                                    <p className="text-xs text-center mt-1 truncate">
+                                        {img.name}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <button 
+                    onClick={handleSubmit} 
+                    disabled={uploading || !imgs || imgs.length === 0}
+                    className={`px-[90px] md:px-[110px] py-[10px] text-accent text-[25px] font-poppins rounded-lg mt-[30px] transition duration-300 ease-in-out transform cursor-pointer ${
+                        uploading || !imgs || imgs.length === 0
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-main hover:bg-complementary hover:scale-105'
+                    }`}
+                >
+                    {uploading ? 'Processing...' : 'Start Analysis'}
+                </button>
+
+                {uploading && (
+                    <div className="mt-4 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-main mx-auto"></div>
+                        <p className="mt-2 text-gray-600">Uploading images and starting analysis...</p>
+                    </div>
+                )}
             </div>
          </section>
         </>

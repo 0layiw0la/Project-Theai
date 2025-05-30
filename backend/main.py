@@ -21,7 +21,7 @@ from database import SessionLocal, User, Task, get_db
 
 # Auth
 load_dotenv()  
-UPLOAD_DIR = os.getenv("UPLOAD_DIR")
+UPLOAD_DIR = os.getenv("UPLOAD_DIR","uploads")
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")  
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
