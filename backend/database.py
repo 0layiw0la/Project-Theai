@@ -30,6 +30,7 @@ class Task(Base):
     result = Column(JSON, nullable=True)
     patient_name = Column(String, nullable=True)
     date = Column(String, nullable=True)
+    image_urls = Column(String, nullable=True) 
     created_at = Column(DateTime, default=datetime.utcnow)
 
 Base.metadata.create_all(bind=engine)

@@ -10,12 +10,13 @@ export default function ResultPage() {
     const [error, setError] = useState(null);
     const navigate = useNavigate();
     const { token } = useAuth();
+    const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
 
     useEffect(() => {
         const fetchResult = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`http://127.0.0.1:8000/result/${taskId}`, {
+                const res = await fetch(`${API_BASE_URL}/result/${taskId}`, {  // FIXED
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

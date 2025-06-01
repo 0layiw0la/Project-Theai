@@ -1,24 +1,133 @@
+# Environment variables - ALL variations
+.env
+.env.*
+*.env
+backend/.env
+backend/.env.*
+frontend/.env
+frontend/.env.*
+project-theai/.env
+project-theai/.env.*
+
+# GCP Credentials - ALL variations
+*service-account*.json
+*gcp*.json
+*google*.json
+backend/*service-account*.json
+backend/*gcp*.json
+backend/*google*.json
+
+# AI Models - These are large and sensitive
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.h5
+*.model
+backend/*.pt
+backend/*.pth
+backend/*.onnx
+
+# Database files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/*.db-journal
+backend/theai.db*
+
+# Upload directories and files
+uploads/
+backend/uploads/
+project-theai/uploads/
+**/uploads/**
+
+# Celery files
+celerybeat-schedule
+celerybeat.pid
+backend/celerybeat-schedule
+backend/celerybeat.pid
+
 # Logs
-logs
 *.log
+logs/
+backend/logs/
+project-theai/logs/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Node.js
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+.npm
+.yarn-integrity
 
-node_modules
-dist
-dist-ssr
-*.local
+# React build
+build/
+dist/
+project-theai/build/
+project-theai/dist/
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.cert
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp

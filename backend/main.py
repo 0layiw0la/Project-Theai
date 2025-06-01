@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 from ultralytics import YOLO
 from functions import calculate_parasite_density
+from gcp_storage import gcp_storage
 from celery_app import celery_app
 from tasks import process_malaria_images
 from database import SessionLocal, User, Task, get_db
@@ -143,36 +144,36 @@ async def submit_images(files: List[UploadFile] = File(...),
                         date: str = Form(None),
                         current_user: User = Depends(get_current_user),
                         db: Session = Depends(get_db)):
-    print(f"Received patient name: {patientName}")
-    print(f"Received date: {date}")
     if not files:
         raise HTTPException(400, "No files uploaded")
 
     task_id = str(uuid.uuid4())
-    saved_paths = []
-    for f in files:
-        ext = os.path.splitext(f.filename)[1]
-        uid = f"{uuid.uuid4()}{ext}"
-        target = os.path.join(UPLOAD_DIR, uid)
-        with open(target, "wb") as out:
-            out.write(await f.read())
-        saved_paths.append(target)
-
-    # Create task in DB
-    new_task = Task(
-        id=task_id,
-        user_id=current_user.id,
-        status="PENDING",
-        patient_name=patientName,
-        date=date
-    )
-    db.add(new_task)
-    db.commit()
-
-    # Queue the task for processing with Celery
-    process_malaria_images.delay(task_id, saved_paths)
     
-    return {"task_id": task_id, "status": "PENDING"}
+    try:
+        # Upload to GCP and get URLs
+        image_urls = await gcp_storage.upload_images(files, task_id)
+        print('done')
+        # Create task with URLs
+        new_task = Task(
+            id=task_id,
+            user_id=current_user.id,
+            status="PENDING",
+            patient_name=patientName,
+            date=date,
+            image_urls=json.dumps(image_urls)  # Store URLs as JSON
+        )
+        print('new_task created')
+        db.add(new_task)
+        db.commit()
+
+        # Queue task with URLs instead of file paths
+        process_malaria_images.delay(task_id, image_urls)
+        
+        return {"task_id": task_id, "status": "PENDING", "images_uploaded": len(image_urls)}
+        
+    except Exception as e:
+        await gcp_storage.cleanup_task_images(task_id)
+        raise HTTPException(500, f"Upload failed: {str(e)}")
 
 @app.get("/tasks")
 async def list_tasks(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -237,3 +238,42 @@ async def get_result(task_id: str, current_user: User = Depends(get_current_user
         "created_at": task.created_at.isoformat()
     }
 
+@app.post("/retry/{task_id}")
+async def retry_task(task_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Retry a failed task using stored image URLs"""
+    try:
+        # Find the failed task
+        task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
+        if not task:
+            raise HTTPException(404, "Task not found")
+        
+        if task.status not in ["FAILED"]:
+            raise HTTPException(400, f"Cannot retry task with status: {task.status}")
+        
+        if not task.image_urls:
+            raise HTTPException(400, "No image URLs found for this task")
+        
+        # Parse stored URLs
+        image_urls = json.loads(task.image_urls)
+        
+        # Reset task status to PENDING
+        task.status = "PENDING"
+        task.result = json.dumps({"status": "retrying"})
+        db.commit()
+        
+        # Queue the task again with same URLs
+        from tasks import process_malaria_images
+        process_malaria_images.delay(task_id, image_urls)
+        
+        print(f"Retrying task {task_id} with {len(image_urls)} images")
+        
+        return {
+            "task_id": task_id, 
+            "status": "PENDING", 
+            "message": "Task retry initiated",
+            "images_count": len(image_urls)
+        }
+        
+    except Exception as e:
+        print(f"Error retrying task {task_id}: {e}")
+        raise HTTPException(500, f"Retry failed: {str(e)}")

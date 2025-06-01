@@ -7,7 +7,9 @@ export default function UploadPage(){
     const navigate = useNavigate();
     const { token } = useAuth();
     const [uploading, setUploading] = useState(false);
-    
+    const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
+
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!imgs || imgs.length === 0) {
@@ -27,12 +29,11 @@ export default function UploadPage(){
         formData.append("patientName", patientName || "");
         formData.append("date", date || "");
 
-        try {
-            const response = await fetch("http://localhost:8000/submit", {
+         try {
+            const response = await fetch(`${API_BASE_URL}/submit`, {  // FIXED
                 method: "POST",
                 headers: {
                     'Authorization': `Bearer ${token}`
-                    // Don't set Content-Type when using FormData
                 },
                 body: formData
             });

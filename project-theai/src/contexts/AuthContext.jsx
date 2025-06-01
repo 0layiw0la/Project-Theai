@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
+const API_BASE_URL = import.meta.env.VITE_APP_API_URL ;
+console.log('API_BASE_URL:', import.meta.env.VITE_APP_API_URL);
 export function useAuth() {
   return useContext(AuthContext);
 }
@@ -22,13 +24,13 @@ export function AuthProvider({ children }) {
       return false;
     }
 
-    try {
-      const response = await fetch('http://127.0.0.1:8000/validate-token', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${checkToken}`
-        }
-      });
+     try {
+            const response = await fetch(`${API_BASE_URL}/validate-token`, {  // FIXED
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${checkToken}`
+                }
+            });
 
       if (response.ok) {
         const userData = await response.json();
@@ -64,18 +66,18 @@ export function AuthProvider({ children }) {
   }, []); // Empty dependency array - runs only once
   
   // Login function
-  const login = async (username, password) => {
-    try {
-      const response = await fetch('http://127.0.0.1:8000/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username,
-          password
-        })
-      });
+    const login = async (username, password) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/login`, {  // FIXED
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username,
+                    password
+                })
+            });
       
       if (response.status === 401) {
         return false;
@@ -98,19 +100,19 @@ export function AuthProvider({ children }) {
   };
 
   // Register function
-  const register = async (username, email, password) => {
-    try {
-      const response = await fetch('http://127.0.0.1:8000/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username,
-          email,
-          password
-        })
-      });
+    const register = async (username, email, password) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/register`, {  // FIXED
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username,
+                    email,
+                    password
+                })
+            });
       
       if (response.ok) {
         const data = await response.json();
