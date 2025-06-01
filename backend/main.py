@@ -176,16 +176,52 @@ async def submit_images(files: List[UploadFile] = File(...),
 
 @app.get("/tasks")
 async def list_tasks(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    tasks = db.query(Task).filter(Task.user_id == current_user.id).all()
-    result = {}
-    for task in tasks:
-        result[task.id] = {
-            "status": task.status,
-            "patient_name": task.patient_name,
-            "date": task.date,
-            "created_at": task.created_at.isoformat()
-        }
-    return result
+    """Get all tasks for current user with automatic cleanup"""
+    try:
+        # Step 1: Cleanup stuck/orphaned tasks (timeout-based)
+        from tasks import cleanup_orphaned_tasks
+        cleanup_result = cleanup_orphaned_tasks()
+        if "failed" not in cleanup_result.lower():
+            print(f"Automatic cleanup: {cleanup_result}")
+        
+        # Step 2: Delete tasks older than 24 hours
+        twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=42)
+        
+        old_tasks = db.query(Task).filter(
+            Task.user_id == current_user.id,
+            Task.created_at < twenty_four_hours_ago
+        ).all()
+        
+        old_task_count = len(old_tasks)
+        if old_task_count > 0:
+            for task in old_tasks:
+                db.delete(task)
+            db.commit()
+            print(f"Deleted {old_task_count} tasks older than 24 hours for user {current_user.id}")
+        
+        # Step 3: Get remaining tasks
+        tasks = db.query(Task).filter(Task.user_id == current_user.id).order_by(Task.created_at.desc()).all()
+        
+        task_dict = {}
+        for task in tasks:
+            try:
+                result = json.loads(task.result) if task.result else {}
+            except:
+                result = {"error": "Invalid result data"}
+            
+            task_dict[task.id] = {
+                "status": task.status,
+                "created_at": task.created_at.isoformat(),
+                "patient_name": task.patient_name,
+                "date": task.date,
+                "result": result
+            }
+        
+        return task_dict
+        
+    except Exception as e:
+        print(f"Error in list_tasks: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch tasks")
 
 @app.get("/result/{task_id}")
 async def get_result(task_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -201,17 +237,3 @@ async def get_result(task_id: str, current_user: User = Depends(get_current_user
         "created_at": task.created_at.isoformat()
     }
 
-@app.post("/cleanup-tasks")
-async def manual_cleanup_tasks(current_user: User = Depends(get_current_user)):
-    """Manually trigger cleanup of orphaned tasks - runs only when TasksPage loads"""
-    try:
-        # Import here to avoid circular imports
-        from tasks import cleanup_orphaned_tasks
-        
-        # Run cleanup synchronously for immediate response
-        result = cleanup_orphaned_tasks()
-        return {"message": result, "status": "completed"}
-        
-    except Exception as e:
-        print(f"Manual cleanup failed: {e}")
-        return {"message": f"Cleanup failed: {str(e)}", "status": "failed"}

@@ -10,59 +10,39 @@ export default function TasksPage() {
     const { token } = useAuth();
 
     const fetchTasks = async () => {
-        try {
-            const res = await fetch("http://127.0.0.1:8000/tasks", {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!res.ok) {
-                if (res.status === 401) {
-                    navigate('/login');
-                    return;
-                }
-                throw new Error('Failed to fetch tasks');
+    try {
+        const res = await fetch("http://127.0.0.1:8000/tasks", {
+            headers: {
+                'Authorization': `Bearer ${token}`
             }
-            
-            const data = await res.json();
-            setTasks(data);
-            
-            // Check if any tasks are still processing
-            const hasProcessing = Object.values(data).some(task => 
-                task.status === "PENDING" || task.status === "PROCESSING"
-            );
-            setIsPolling(hasProcessing);
-            
-        } catch (error) {
-            console.error("Error fetching tasks:", error);
-        }
-    };
-
-    // Trigger cleanup only on first load
-    const triggerCleanup = async () => {
-        try {
-            await fetch("http://127.0.0.1:8000/cleanup-tasks", {
-                method: "POST",
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            console.log("Cleanup triggered on page load");
-        } catch (error) {
-            console.error("Cleanup failed:", error);
-        }
-    };
-
-    useEffect(() => {
-        // Initial load: trigger cleanup and fetch tasks
-        const initialLoad = async () => {
-            await triggerCleanup(); // Clean up orphaned tasks first
-            await fetchTasks();     // Then fetch fresh task list
-        };
+        });
         
-        initialLoad();
-    }, [token, navigate]);
+        // REMOVED: 401 check - no redirect needed since already authenticated
+        if (!res.ok) {
+            throw new Error('Failed to fetch tasks');
+        }
+        
+        const data = await res.json();
+        setTasks(data);
+        
+        // Check if any tasks are still processing
+        const hasProcessing = Object.values(data).some(task => 
+            task.status === "PENDING" || task.status === "PROCESSING"
+        );
+        setIsPolling(hasProcessing);
+        
+    } catch (error) {
+        console.error("Error fetching tasks:", error);
+        // Don't redirect - user is already authenticated
+    }
+};
+
+// REMOVED: triggerCleanup function - now handled in backend
+
+useEffect(() => {
+    // SIMPLIFIED: Just fetch tasks - cleanup happens automatically in backend
+    fetchTasks();
+}, [token, navigate]);
 
     // Smart polling: only if there are processing tasks
     useEffect(() => {
@@ -101,17 +81,6 @@ export default function TasksPage() {
                         </button>
                     </div>
                 </div>
-
-                {/* Show polling status */}
-                {isPolling && (
-                    <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-md">
-                        <p className="text-blue-700 text-sm flex items-center">
-                            <span className="animate-spin mr-2">🔄</span>
-                            Auto-updating tasks in progress... 
-                            ({Object.values(tasks).filter(t => t.status === "PENDING" || t.status === "PROCESSING").length} active)
-                        </p>
-                    </div>
-                )}
                 
                 {Object.keys(tasks).length === 0 ? (
                     <div className="text-center py-10">

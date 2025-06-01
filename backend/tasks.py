@@ -49,12 +49,13 @@ def calculate_dynamic_timeout(task_id):
         return 30 * 60
 
 def configure_pytorch_threads():
-    """Configure PyTorch to use 4 threads per worker"""
-    torch.set_num_threads(4)
-    torch.set_num_interop_threads(4)
-    os.environ['OMP_NUM_THREADS'] = '4'
-    os.environ['MKL_NUM_THREADS'] = '4'
-    print(f"Worker PID {os.getpid()}: 4 threads configured")
+    """Configure PyTorch to use 2 threads per worker (4-core system)"""
+    # FOR 4-CORE SYSTEM: Use 2 threads per worker (2 workers × 2 threads = 4 total)
+    torch.set_num_threads(2)  # CHANGE TO 4 for 8-core system
+    torch.set_num_interop_threads(2)  # CHANGE TO 4 for 8-core system
+    os.environ['OMP_NUM_THREADS'] = '2'  # CHANGE TO '4' for 8-core system
+    os.environ['MKL_NUM_THREADS'] = '2'  # CHANGE TO '4' for 8-core system
+    print(f"Worker PID {os.getpid()}: 2 threads configured (4-core system)")  # UPDATE MESSAGE for 8-core
 
 @celery_app.task(bind=True, autoretry_for=(WorkerLostError, ConnectionError, OSError))
 def process_malaria_images(self, task_id: str, image_paths: list):
@@ -166,11 +167,12 @@ def process_malaria_images(self, task_id: str, image_paths: list):
 
 @celery_app.task
 def cleanup_orphaned_tasks():
-    """Simple cleanup based on estimated completion time"""
+    """Simple cleanup for stuck tasks only (24hr cleanup is automatic)"""
     try:
         db = SessionLocal()
         now = datetime.utcnow()
         
+        # Only look for stuck/orphaned tasks, not old ones
         processing_tasks = db.query(Task).filter(Task.status == "PROCESSING").all()
         cleanup_count = 0
         
@@ -190,16 +192,16 @@ def cleanup_orphaned_tasks():
                             })
                             cleanup_count += 1
                     else:
-                        # Fallback: 2 hours old
+                        # Only cleanup tasks stuck for more than 2 hours
                         if (now - task.created_at).total_seconds() > 2 * 3600:
                             task.status = "FAILED"
                             task.result = json.dumps({
-                                "error": "Task exceeded 2 hour fallback",
+                                "error": "Task stuck - no timeout data",
                                 "cleanup_time": now.isoformat()
                             })
                             cleanup_count += 1
             except:
-                # Fallback for corrupt data
+                # Only cleanup very old stuck tasks
                 if (now - task.created_at).total_seconds() > 2 * 3600:
                     task.status = "FAILED"
                     task.result = json.dumps({
@@ -210,11 +212,11 @@ def cleanup_orphaned_tasks():
         
         if cleanup_count > 0:
             db.commit()
-            print(f"Cleaned up {cleanup_count} tasks")
+            print(f"Cleaned up {cleanup_count} stuck tasks")
         
         db.close()
-        return f"Cleaned up {cleanup_count} tasks"
+        return f"Cleaned up {cleanup_count} stuck tasks"
         
     except Exception as e:
         print(f"Cleanup failed: {e}")
-        return f"Cleanup failed: {e}"
+        return f"Cleanup failed: {e}"   

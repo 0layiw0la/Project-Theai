@@ -46,16 +46,15 @@ services:
       - uploads_data:/app/uploads
     depends_on:
       - redis
-    # Fixed 2 workers with 4 threads each
     command: celery -A celery_app worker --concurrency=2 --loglevel=info
     deploy:
       resources:
         limits:
-          memory: 6G
-          cpus: '8'  # Limit to 8 CPUs (2 workers × 4 threads)
+          memory: 4G      # FOR 4-CORE: 4GB limit | FOR 8-CORE: Change to 6G or 8G
+          cpus: '3.5'     # FOR 4-CORE: 3.5 cores | FOR 8-CORE: Change to '7.0' or '8.0'
         reservations:
-          memory: 2G
-          cpus: '4'
+          memory: 1G      # FOR 4-CORE: 1GB reserve | FOR 8-CORE: Change to 2G
+          cpus: '2.0'     # FOR 4-CORE: 2 cores reserve | FOR 8-CORE: Change to '4.0'
     healthcheck:
       test: ["CMD-SHELL", "celery -A celery_app inspect ping || exit 1"]
       interval: 60s
