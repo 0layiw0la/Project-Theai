@@ -200,3 +200,18 @@ async def get_result(task_id: str, current_user: User = Depends(get_current_user
         "date": task.date,
         "created_at": task.created_at.isoformat()
     }
+
+@app.post("/cleanup-tasks")
+async def manual_cleanup_tasks(current_user: User = Depends(get_current_user)):
+    """Manually trigger cleanup of orphaned tasks - runs only when TasksPage loads"""
+    try:
+        # Import here to avoid circular imports
+        from tasks import cleanup_orphaned_tasks
+        
+        # Run cleanup synchronously for immediate response
+        result = cleanup_orphaned_tasks()
+        return {"message": result, "status": "completed"}
+        
+    except Exception as e:
+        print(f"Manual cleanup failed: {e}")
+        return {"message": f"Cleanup failed: {str(e)}", "status": "failed"}

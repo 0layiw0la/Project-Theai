@@ -65,12 +65,7 @@ celery_app.conf.update(
     }
 )
 
-# Beat schedule for cleanup
-celery_app.conf.beat_schedule = {
-    'cleanup-orphaned-tasks': {
-        'task': 'tasks.cleanup_orphaned_tasks',
-        'schedule': 300.0,  # Every 5 minutes
-    },
-}
+# Empty beat schedule
+celery_app.conf.beat_schedule = {}
 
 print(f"Celery configured with {OPTIMAL_WORKERS} workers")

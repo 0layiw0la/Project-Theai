@@ -6,7 +6,7 @@ from PIL import Image, ImageEnhance, ImageOps
 from ultralytics import YOLO
 import json
 import numpy as np # For averaging
-import torch # YOLO results might use torch tensors
+import torch 
 stage_map ={"red blood cell": 0, "trophozoite": 1, "schizont": 2, "ring": 3, "difficult": 4,"gametocyte":5,"leukocyte":6}
 # --- Provided Augmentation Function ---
 def augment_microscopic_image(image_path_or_bytes, contrast_factor=(1.0, 2.0), sharpness_factor=(1.0, 3.0), random_saturation_range=(0.5, 1.5)):

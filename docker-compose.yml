@@ -63,20 +63,6 @@ services:
       retries: 3
     restart: unless-stopped
 
-  # Beat scheduler for orphan cleanup
-  celery-beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-    volumes:
-      - ./backend:/app
-    depends_on:
-      - redis
-    command: celery -A celery_app beat --loglevel=info
-    restart: unless-stopped
-
 volumes:
   redis_data:
   uploads_data:
