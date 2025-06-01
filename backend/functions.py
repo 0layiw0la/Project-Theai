@@ -47,7 +47,6 @@ def augment_microscopic_image(image_path_or_bytes, contrast_factor=(1.0, 2.0), s
         img = enhancer_saturation.enhance(saturation)
 
 
-        print('sucess augmentation')
         # Return the augmented RGB image
         return img
 
@@ -90,7 +89,6 @@ def calculate_parasite_density(
         dict: Results including average parasitemia, density, stage counts, and run details.
               Returns None on critical errors.
     """
-    print("Stage map received:", stage_map)
     if not image_list:
         print("Error: Image list cannot be empty.")
         return None
@@ -110,7 +108,6 @@ def calculate_parasite_density(
 
 
     for rep in range(repetitions):
-        print(f"--- Starting run {rep+1} of {repetitions} ---")
         run_parasite_count = 0
         run_rbc_count = 0
         run_stage_counts_raw = Counter() # Stores {class_id: count} for this run
@@ -121,10 +118,7 @@ def calculate_parasite_density(
         for i, image_data in enumerate(current_image_list):
             current_total_rbcs = run_parasite_count + run_rbc_count
             if current_total_rbcs >= target_rbc_count:
-                #print(f"Target RBC count ({target_rbc_count}) reached after {images_processed_this_run} images. Stopping run.")
                 break
-
-            # print(f"Processing image {i+1}/{len(current_image_list)}...") # Verbose logging
 
             # --- 1. Augmentation ---
             augmented_img = augment_microscopic_image(image_data)
@@ -158,7 +152,6 @@ def calculate_parasite_density(
                     detected_classes = rbc_results[0].boxes.cls.int().tolist()
                     rbcs_in_image = detected_classes.count(rbc_class_id)
                     run_rbc_count += rbcs_in_image
-                    print(f"RBCs in image: {run_rbc_count}") # Debugging line to check RBC count
                 else:
                     rbcs_in_image = 0
             except Exception as e:
@@ -175,9 +168,7 @@ def calculate_parasite_density(
                        
                         stages_in_image = Counter(detected_classes)
                         
-                        run_stage_counts_raw.update(stages_in_image)
-                        print(f"Stages in image: {stages_in_image}") # Debugging line to check stage counts
-                            
+                        run_stage_counts_raw.update(stages_in_image)                            
             except Exception as e:
                 pass
         
