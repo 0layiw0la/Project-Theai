@@ -36,7 +36,7 @@ export default function TasksPage() {
         }
     };
 
-    // ✅ ADD: Retry function
+    // Retry function
     const retryTask = async (taskId, event) => {
         event.stopPropagation();
         setRetryingTasks(prev => new Set([...prev, taskId]));

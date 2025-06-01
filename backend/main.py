@@ -152,7 +152,6 @@ async def submit_images(files: List[UploadFile] = File(...),
     try:
         # Upload to GCP and get URLs
         image_urls = await gcp_storage.upload_images(files, task_id)
-        print('done')
         # Create task with URLs
         new_task = Task(
             id=task_id,
@@ -162,7 +161,6 @@ async def submit_images(files: List[UploadFile] = File(...),
             date=date,
             image_urls=json.dumps(image_urls)  # Store URLs as JSON
         )
-        print('new_task created')
         db.add(new_task)
         db.commit()
 
@@ -182,15 +180,13 @@ async def list_tasks(current_user: User = Depends(get_current_user), db: Session
         # Step 1: Cleanup stuck/orphaned tasks (timeout-based)
         from tasks import cleanup_orphaned_tasks
         cleanup_result = cleanup_orphaned_tasks()
-        if "failed" not in cleanup_result.lower():
-            print(f"Automatic cleanup: {cleanup_result}")
         
         # Step 2: Delete tasks older than 24 hours
-        twenty_four_hours_ago = datetime.utcnow() - timedelta(hours=42)
+        forty_two_hours_ago = datetime.utcnow() - timedelta(hours=42)
         
         old_tasks = db.query(Task).filter(
             Task.user_id == current_user.id,
-            Task.created_at < twenty_four_hours_ago
+            Task.created_at < forty_two_hours_ago
         ).all()
         
         old_task_count = len(old_tasks)
@@ -198,7 +194,7 @@ async def list_tasks(current_user: User = Depends(get_current_user), db: Session
             for task in old_tasks:
                 db.delete(task)
             db.commit()
-            print(f"Deleted {old_task_count} tasks older than 24 hours for user {current_user.id}")
+
         
         # Step 3: Get remaining tasks
         tasks = db.query(Task).filter(Task.user_id == current_user.id).order_by(Task.created_at.desc()).all()
@@ -265,7 +261,6 @@ async def retry_task(task_id: str, current_user: User = Depends(get_current_user
         from tasks import process_malaria_images
         process_malaria_images.delay(task_id, image_urls)
         
-        print(f"Retrying task {task_id} with {len(image_urls)} images")
         
         return {
             "task_id": task_id, 
@@ -275,5 +270,4 @@ async def retry_task(task_id: str, current_user: User = Depends(get_current_user
         }
         
     except Exception as e:
-        print(f"Error retrying task {task_id}: {e}")
         raise HTTPException(500, f"Retry failed: {str(e)}")

@@ -13,10 +13,9 @@ class GCPStorageService:
     def __init__(self):
         try:
             self.client = storage.Client()
-            self.bucket_name = os.getenv("GCP_BUCKET_NAME", "theai-malaria-images")
+            self.bucket_name = os.getenv("GCP_BUCKET_NAME")
             self.bucket = self.client.bucket(self.bucket_name)
             self.use_local_storage = False
-            print(f"✅ GCP Storage initialized with bucket: {self.bucket_name}")
         except Exception as e:
             print(f"⚠️  Failed to initialize GCP Storage: {e}")
             print("⚠️  Falling back to local storage")
@@ -52,7 +51,6 @@ class GCPStorageService:
                 urls.append(signed_url)
                 await file.seek(0)
                 
-                print(f"Uploaded {file.filename} -> Private blob with signed URL")
                 
             except Exception as e:
                 print(f"Failed to upload {file.filename}: {e}")
@@ -99,7 +97,6 @@ class GCPStorageService:
                 file_paths.append(file_path)
                 await file.seek(0)
                 
-                print(f"Saved {file.filename} -> {file_path}")
                 
             except Exception as e:
                 print(f"Failed to save {file.filename}: {e}")
@@ -115,16 +112,11 @@ class GCPStorageService:
                 upload_dir = f"uploads/{task_id}"
                 if os.path.exists(upload_dir):
                     shutil.rmtree(upload_dir)
-                    print(f"Cleaned up local directory: {upload_dir}")
             else:
                 # GCP cleanup
                 blobs = self.bucket.list_blobs(prefix=f"tasks/{task_id}/")
-                deleted_count = 0
                 for blob in blobs:
                     blob.delete()
-                    deleted_count += 1
-                if deleted_count > 0:
-                    print(f"Cleaned up {deleted_count} GCP images for task {task_id}")
         except Exception as e:
             print(f"Failed to cleanup images for task {task_id}: {e}")
     
@@ -144,20 +136,15 @@ class GCPStorageService:
                             if dir_time < cutoff_date:
                                 import shutil
                                 shutil.rmtree(task_path)
-                                print(f"Cleaned up old local directory: {task_path}")
             else:
                 # GCP cleanup
                 cutoff_date = datetime.utcnow() - timedelta(days=days_old)
                 blobs = self.bucket.list_blobs(prefix="tasks/")
-                deleted_count = 0
                 
                 for blob in blobs:
                     if blob.time_created < cutoff_date.replace(tzinfo=blob.time_created.tzinfo):
                         blob.delete()
-                        deleted_count += 1
                 
-                if deleted_count > 0:
-                    print(f"Cleaned up {deleted_count} old GCP images (older than {days_old} days)")
         except Exception as e:
             print(f"Failed to cleanup old images: {e}")
 

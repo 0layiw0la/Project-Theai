@@ -27,9 +27,7 @@ def process_malaria_images(self, task_id: str, image_urls: list):
     
     temp_files = []
     
-    try:
-        print(f"Starting task {task_id} with {len(image_urls)} images")
-        
+    try:        
         # Configure threads
         configure_pytorch_threads()
         
@@ -43,7 +41,6 @@ def process_malaria_images(self, task_id: str, image_urls: list):
         db.close()
         
         # Download images from URLs to temp files
-        print(f"Downloading {len(image_urls)} images...")
         for i, url in enumerate(image_urls):
             if url.startswith('http'):
                 # Download from GCP URL
@@ -52,24 +49,20 @@ def process_malaria_images(self, task_id: str, image_urls: list):
                 with open(temp_file, 'wb') as f:
                     f.write(response.content)
                 temp_files.append(temp_file)
-                print(f"Downloaded image {i+1}/{len(image_urls)}")
             else:
                 # Local file path
                 temp_files.append(url)
         
         # Load models
-        print(f"Loading models...")
         asexual_model = YOLO(os.getenv("ASEXUAL_MODEL_PATH"))
         rbc_model = YOLO(os.getenv("RBC_MODEL_PATH"))
         stage_model = YOLO(os.getenv("STAGE_MODEL_PATH"))
         
         # Process images
-        print(f"Processing {len(temp_files)} images...")
         result = calculate_parasite_density(
             temp_files, asexual_model, rbc_model, stage_model, 500, 5
         )
         
-        print(f"Processing complete for task {task_id}")
         
         # Update to SUCCESS
         db = SessionLocal()
@@ -93,7 +86,6 @@ def process_malaria_images(self, task_id: str, image_urls: list):
             asyncio.set_event_loop(loop)
             try:
                 loop.run_until_complete(gcp_storage.cleanup_task_images(task_id))
-                print(f"✅ Cleaned up GCP images for successful task {task_id}")
             finally:
                 loop.close()
         except Exception as gcp_error:
@@ -151,11 +143,9 @@ def cleanup_orphaned_tasks():
         
         if cleanup_count > 0:
             db.commit()
-            print(f"Cleaned up {cleanup_count} stuck tasks")
         
         db.close()
         return f"Cleaned up {cleanup_count} stuck tasks"
         
     except Exception as e:
-        print(f"Cleanup failed: {e}")
         return f"Cleanup failed: {e}"
