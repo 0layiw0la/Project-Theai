@@ -1,7 +1,6 @@
 import os
 import json
 import torch
-import psutil
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from celery_app import celery_app
@@ -13,57 +12,55 @@ from celery.exceptions import WorkerLostError
 
 load_dotenv()
 
-def configure_pytorch_threads():
-    """Configure PyTorch to use optimal threads per worker"""
+def calculate_dynamic_timeout(task_id):
+    """Calculate timeout based on queue position - fixed 2 workers"""
     try:
-        # Get system resources
-        total_cores = os.cpu_count() or 1
-        total_memory_gb = psutil.virtual_memory().total / (1024**3)
+        from celery_app import celery_app
         
-        # Calculate optimal workers (same logic as celery_app.py)
-        if total_memory_gb < 2:
-            optimal_workers = 1
-        elif 2 <= total_memory_gb < 4:
-            optimal_workers = min(2, total_cores)
-        elif 4 <= total_memory_gb < 8:
-            optimal_workers = min(3, total_cores)
-        else:
-            optimal_workers = max(1, total_cores - 1)
+        inspect = celery_app.control.inspect()
+        active_tasks = inspect.active() or {}
+        reserved_tasks = inspect.reserved() or {}
         
-        # Calculate threads per worker
-        threads_per_worker = max(1, total_cores // optimal_workers)
+        # Count tasks ahead in queue
+        queue_position = 0
         
-        # Configure PyTorch threading
-        torch.set_num_threads(threads_per_worker)
-        torch.set_num_interop_threads(threads_per_worker)
+        # Count active tasks
+        for worker, tasks in active_tasks.items():
+            queue_position += len(tasks)
         
-        # Set environment variables for OpenMP/MKL
-        os.environ['OMP_NUM_THREADS'] = str(threads_per_worker)
-        os.environ['MKL_NUM_THREADS'] = str(threads_per_worker)
-        os.environ['NUMEXPR_NUM_THREADS'] = str(threads_per_worker)
+        # Count reserved tasks until we find our task
+        for worker, tasks in reserved_tasks.items():
+            for task in tasks:
+                if task_id in task.get('args', []):
+                    break
+                queue_position += 1
         
-        print(f"Worker PID {os.getpid()}: {threads_per_worker} threads/worker ({optimal_workers} workers on {total_cores} cores)")
-        return threads_per_worker
+        # Calculate timeout: 30min base + 7min per task ahead (accounting for 2 workers)
+        base_timeout = 30 * 60
+        per_task_estimate = 7 * 60
+        tasks_ahead = max(0, queue_position - 2)
+        dynamic_timeout = base_timeout + (tasks_ahead * per_task_estimate)
+        
+        print(f"Task {task_id}: {tasks_ahead} tasks ahead, timeout: {dynamic_timeout/60:.1f} minutes")
+        return dynamic_timeout
         
     except Exception as e:
-        print(f"Thread configuration failed: {e}, using default")
-        return total_cores
+        print(f"Failed to calculate timeout: {e}, using 30 minutes")
+        return 30 * 60
 
-def log_memory_usage(task_id, stage=""):
-    """Log current memory usage"""
-    try:
-        process = psutil.Process()
-        memory_mb = process.memory_info().rss / 1024 / 1024
-        system_memory = psutil.virtual_memory()
-        available_gb = system_memory.available / (1024**3)
-        
-        print(f"Task {task_id} {stage}: Worker memory: {memory_mb:.1f}MB, System available: {available_gb:.1f}GB")
-        return memory_mb, available_gb
-    except:
-        return None, None
+def configure_pytorch_threads():
+    """Configure PyTorch to use 4 threads per worker"""
+    torch.set_num_threads(4)
+    torch.set_num_interop_threads(4)
+    os.environ['OMP_NUM_THREADS'] = '4'
+    os.environ['MKL_NUM_THREADS'] = '4'
+    print(f"Worker PID {os.getpid()}: 4 threads configured")
 
-@celery_app.task(bind=True, autoretry_for=(WorkerLostError, ConnectionError, OSError, MemoryError))
+@celery_app.task(bind=True, autoretry_for=(WorkerLostError, ConnectionError, OSError))
 def process_malaria_images(self, task_id: str, image_paths: list):
+    
+    dynamic_timeout = calculate_dynamic_timeout(task_id)
+    start_time = datetime.utcnow()
     
     def mark_task_failed(error_msg):
         try:
@@ -71,81 +68,71 @@ def process_malaria_images(self, task_id: str, image_paths: list):
             task = db.query(Task).filter(Task.id == task_id).first()
             if task:
                 task.status = "FAILED"
-                task.result = json.dumps({
-                    "error": error_msg, 
-                    "retry_count": self.request.retries,
-                    "worker_pid": os.getpid()
-                })
+                task.result = json.dumps({"error": error_msg})
                 db.commit()
             db.close()
         except Exception as e:
             print(f"Failed to update task {task_id}: {e}")
     
+    def check_timeout():
+        elapsed = (datetime.utcnow() - start_time).total_seconds()
+        if elapsed > dynamic_timeout:
+            raise TimeoutError(f"Task exceeded {dynamic_timeout/60:.1f} minute timeout")
+    
     try:
-        worker_pid = os.getpid()
-        print(f"Worker PID {worker_pid} starting task {task_id} (attempt {self.request.retries + 1})")
+        print(f"Starting task {task_id} with {dynamic_timeout/60:.1f} minute timeout")
         
-        # Configure PyTorch threads for this worker
-        threads_per_worker = configure_pytorch_threads()
+        # Configure threads
+        configure_pytorch_threads()
         
-        # Log initial memory
-        log_memory_usage(task_id, "start")
-        
-        # Update task status to PROCESSING
+        # Update status to PROCESSING
         db = SessionLocal()
         task = db.query(Task).filter(Task.id == task_id).first()
         if task:
             task.status = "PROCESSING"
             task.result = json.dumps({
-                "status": "loading_models", 
-                "attempt": self.request.retries + 1,
-                "worker_pid": worker_pid,
-                "threads_per_worker": threads_per_worker
+                "status": "loading_models",
+                "timeout_minutes": dynamic_timeout / 60,
+                "estimated_completion": (datetime.utcnow() + timedelta(seconds=dynamic_timeout)).isoformat()
             })
             db.commit()
         db.close()
         
-        # Load models with memory monitoring
+        # Load models
         print(f"Loading models for task {task_id}...")
-        asexual_model = YOLO(os.getenv("ASEXUAL_MODEL_PATH"))
-        log_memory_usage(task_id, "after asexual model")
+        check_timeout()
         
-        rbc_model = YOLO(os.getenv("RBC_MODEL_PATH"))  
-        log_memory_usage(task_id, "after RBC model")
+        asexual_model = YOLO(os.getenv("ASEXUAL_MODEL_PATH"))
+        check_timeout()
+        
+        rbc_model = YOLO(os.getenv("RBC_MODEL_PATH"))
+        check_timeout()
         
         stage_model = YOLO(os.getenv("STAGE_MODEL_PATH"))
-        memory_mb, available_gb = log_memory_usage(task_id, "after all models")
-        
-        # Check if we have enough memory to proceed
-        if available_gb and available_gb < 0.5:  # Less than 500MB available
-            raise MemoryError(f"Insufficient system memory: {available_gb:.1f}GB available")
-        
-        print(f"Models loaded for task {task_id}")
+        check_timeout()
         
         # Update progress
         db = SessionLocal()
         task = db.query(Task).filter(Task.id == task_id).first()
         if task:
             task.result = json.dumps({
-                "status": "processing_images", 
-                "attempt": self.request.retries + 1,
-                "worker_pid": worker_pid,
-                "worker_memory_mb": memory_mb,
-                "threads_per_worker": threads_per_worker
+                "status": "processing_images",
+                "timeout_minutes": dynamic_timeout / 60
             })
             db.commit()
         db.close()
         
-        # Process images (long-running operation)
+        # Process images
         print(f"Processing images for task {task_id}...")
+        check_timeout()
+        
         result = calculate_parasite_density(
             image_paths, asexual_model, rbc_model, stage_model, 500, 5
         )
         
-        log_memory_usage(task_id, "after processing")
         print(f"Processing complete for task {task_id}")
         
-        # Success - update database
+        # Success
         db = SessionLocal()
         task = db.query(Task).filter(Task.id == task_id).first()
         if task:
@@ -159,80 +146,75 @@ def process_malaria_images(self, task_id: str, image_paths: list):
             if os.path.exists(path):
                 os.remove(path)
         
-        # Free memory
-        del asexual_model, rbc_model, stage_model
-        log_memory_usage(task_id, "after cleanup")
-        
         return result
         
-    except MemoryError as e:
-        error_msg = f"Memory error: {str(e)}"
-        print(f"Memory error in task {task_id}: {error_msg}")
-        mark_task_failed(error_msg)
-        raise  # Let Celery retry
-        
-    except WorkerLostError:
-        print(f"Worker lost for task {task_id}")
-        mark_task_failed("Worker was killed - likely due to resource limits")
-        raise  # Let Celery handle the retry
+    except TimeoutError as e:
+        print(f"Timeout for task {task_id}: {e}")
+        mark_task_failed(str(e))
+        return {"error": str(e)}
         
     except Exception as e:
         error_msg = f"Processing error: {str(e)}"
-        print(f"Task {task_id} failed (attempt {self.request.retries + 1}): {error_msg}")
+        print(f"Task {task_id} failed: {error_msg}")
         
-        # Mark as failed if max retries exceeded
         if self.request.retries >= 1:
             mark_task_failed(error_msg)
             return {"error": error_msg}
         else:
             mark_task_failed(f"Retrying after error: {error_msg}")
-            raise  # Trigger retry
+            raise
 
 @celery_app.task
 def cleanup_orphaned_tasks():
-    """Find and mark orphaned tasks as failed"""
+    """Simple cleanup based on estimated completion time"""
     try:
         db = SessionLocal()
+        now = datetime.utcnow()
         
-        # Find tasks that have been processing for over 30 minutes with no worker activity
-        thirty_minutes_ago = datetime.utcnow() - timedelta(minutes=30)
-        
-        # Look for tasks that are stuck
-        orphaned_tasks = db.query(Task).filter(
-            Task.status == "PROCESSING",
-            Task.created_at < thirty_minutes_ago
-        ).all()
-        
+        processing_tasks = db.query(Task).filter(Task.status == "PROCESSING").all()
         cleanup_count = 0
-        for task in orphaned_tasks:
-            # Check if task is actually running by checking Celery
-            from celery_app import celery_app
-            active_tasks = celery_app.control.inspect().active()
-            
-            task_is_active = False
-            if active_tasks:
-                for worker, tasks in active_tasks.items():
-                    for active_task in tasks:
-                        if task.id in active_task.get('args', []):
-                            task_is_active = True
-                            break
-            
-            # If task is not active, mark as failed
-            if not task_is_active:
-                task.status = "FAILED"
-                task.result = json.dumps({
-                    "error": "Task orphaned - worker died or task lost",
-                    "cleanup_time": datetime.utcnow().isoformat()
-                })
-                cleanup_count += 1
+        
+        for task in processing_tasks:
+            try:
+                if task.result:
+                    task_data = json.loads(task.result)
+                    estimated_completion = task_data.get('estimated_completion')
+                    
+                    if estimated_completion:
+                        completion_time = datetime.fromisoformat(estimated_completion.replace('Z', '+00:00'))
+                        if now > completion_time:
+                            task.status = "FAILED"
+                            task.result = json.dumps({
+                                "error": "Task exceeded timeout",
+                                "cleanup_time": now.isoformat()
+                            })
+                            cleanup_count += 1
+                    else:
+                        # Fallback: 2 hours old
+                        if (now - task.created_at).total_seconds() > 2 * 3600:
+                            task.status = "FAILED"
+                            task.result = json.dumps({
+                                "error": "Task exceeded 2 hour fallback",
+                                "cleanup_time": now.isoformat()
+                            })
+                            cleanup_count += 1
+            except:
+                # Fallback for corrupt data
+                if (now - task.created_at).total_seconds() > 2 * 3600:
+                    task.status = "FAILED"
+                    task.result = json.dumps({
+                        "error": "Task cleanup - corrupt data",
+                        "cleanup_time": now.isoformat()
+                    })
+                    cleanup_count += 1
         
         if cleanup_count > 0:
             db.commit()
-            print(f"Cleaned up {cleanup_count} orphaned tasks")
+            print(f"Cleaned up {cleanup_count} tasks")
         
         db.close()
-        return f"Cleaned up {cleanup_count} orphaned tasks"
+        return f"Cleaned up {cleanup_count} tasks"
         
     except Exception as e:
-        print(f"Orphan cleanup failed: {e}")
+        print(f"Cleanup failed: {e}")
         return f"Cleanup failed: {e}"

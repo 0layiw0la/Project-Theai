@@ -46,16 +46,16 @@ services:
       - uploads_data:/app/uploads
     depends_on:
       - redis
-    # Let Celery auto-detect worker count based on system resources
-    command: celery -A celery_app worker --loglevel=info
-    # Adjusted memory limits based on worker count
+    # Fixed 2 workers with 4 threads each
+    command: celery -A celery_app worker --concurrency=2 --loglevel=info
     deploy:
       resources:
         limits:
-          memory: 6G  # Increased for multiple workers
+          memory: 6G
+          cpus: '8'  # Limit to 8 CPUs (2 workers × 4 threads)
         reservations:
           memory: 2G
-    # Health check
+          cpus: '4'
     healthcheck:
       test: ["CMD-SHELL", "celery -A celery_app inspect ping || exit 1"]
       interval: 60s
