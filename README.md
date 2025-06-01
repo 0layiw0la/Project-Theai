@@ -1,2 +1,2 @@
 # Project Theia
- Nithub X Meta Hackathon
+ Nithub X Meta Hackathon.
