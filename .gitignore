@@ -17,16 +17,6 @@ backend/*service-account*.json
 backend/*gcp*.json
 backend/*google*.json
 
-# AI Models - These are large and sensitive
-*.pt
-*.pth
-*.onnx
-*.pkl
-*.h5
-*.model
-backend/*.pt
-backend/*.pth
-backend/*.onnx
 
 # Database files
 *.db
