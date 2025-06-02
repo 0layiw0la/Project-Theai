@@ -7,6 +7,7 @@ export default function TasksPage() {
     const [tasks, setTasks] = useState({});
     const [isPolling, setIsPolling] = useState(false);
     const [retryingTasks, setRetryingTasks] = useState(new Set());
+    const [deletingTasks, setDeletingTasks] = useState(new Set()); // ✅ ADD: Delete state
     const navigate = useNavigate();
     const { token } = useAuth();
     const API_BASE_URL = import.meta.env.VITE_APP_API_URL || 'http://127.0.0.1:8000';
@@ -56,6 +57,47 @@ export default function TasksPage() {
             alert('Retry failed');
         } finally {
             setRetryingTasks(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(taskId);
+                return newSet;
+            });
+        }
+    };
+
+    // ✅ ADD: Delete function
+    const deleteTask = async (taskId, event) => {
+        event.stopPropagation();
+        
+        // Confirm deletion
+        if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+            return;
+        }
+        
+        setDeletingTasks(prev => new Set([...prev, taskId]));
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/task/${taskId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (response.ok) {
+                // Remove task from local state immediately
+                setTasks(prev => {
+                    const newTasks = { ...prev };
+                    delete newTasks[taskId];
+                    return newTasks;
+                });
+                await fetchTasks();
+            } else {
+                const error = await response.json().catch(() => ({ message: 'Delete failed' }));
+                alert(error.message || 'Delete failed');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('Delete failed');
+        } finally {
+            setDeletingTasks(prev => {
                 const newSet = new Set(prev);
                 newSet.delete(taskId);
                 return newSet;
@@ -113,7 +155,7 @@ export default function TasksPage() {
                         {Object.entries(tasks).map(([id, task]) => (
                             <div
                                 key={id}
-                                className={`p-4 border rounded-lg shadow cursor-pointer transition-colors ${
+                                className={`p-4 border rounded-lg shadow cursor-pointer transition-colors relative ${
                                     task.status === "SUCCESS" ? "bg-green-50 hover:bg-green-100 border-green-200" : 
                                     task.status === "FAILED" ? "bg-red-50 hover:bg-red-100 border-red-200" : 
                                     task.status === "PROCESSING" ? "bg-yellow-50 border-yellow-200" :
@@ -123,10 +165,24 @@ export default function TasksPage() {
                                     if (task.status === "SUCCESS") navigate(`/result/${id}`);
                                 }}
                             >
+                                {/* ✅ ADD: Delete button - positioned absolutely */}
+                                <button
+                                    onClick={(e) => deleteTask(id, e)}
+                                    disabled={deletingTasks.has(id)}
+                                    className={`absolute top-2 right-2 w-6 h-6 rounded-full text-xs font-bold transition-colors ${
+                                        deletingTasks.has(id) 
+                                            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
+                                            : "bg-red-500 text-white hover:bg-red-600"
+                                    }`}
+                                    title="Delete task"
+                                >
+                                    {deletingTasks.has(id) ? "..." : "×"}
+                                </button>
+
                                 {/* Hidden task ID */}
                                 <div className="hidden">{id}</div>
                                 
-                                <p className="text-lg font-semibold">
+                                <p className="text-lg font-semibold pr-8"> {/* ✅ ADD: padding-right for delete button */}
                                     {task.patient_name || "Unnamed Patient"}
                                 </p>
                                 <p className="text-sm text-gray-500">
@@ -141,7 +197,7 @@ export default function TasksPage() {
                                     }`}>
                                         {task.status === "PROCESSING" && <span className="animate-pulse mr-1">🔄</span>}
                                         {task.status}
-                                        {/* ✅ ADD: Small retry text for failed tasks */}
+                                        {/* Retry option for failed tasks */}
                                         {task.status === "FAILED" && (
                                             <span 
                                                 className={`ml-2 text-xs underline cursor-pointer ${

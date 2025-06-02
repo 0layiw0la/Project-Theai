@@ -18,6 +18,7 @@ from gcp_storage import gcp_storage
 from celery_app import celery_app
 from tasks import process_malaria_images
 from database import SessionLocal, User, Task, get_db
+from llama_service import llama_service
 
 
 # Auth
@@ -156,7 +157,7 @@ async def submit_images(files: List[UploadFile] = File(...),
         new_task = Task(
             id=task_id,
             user_id=current_user.id,
-            status="PENDING",
+            status="PROCESSING",
             patient_name=patientName,
             date=date,
             image_urls=json.dumps(image_urls)  # Store URLs as JSON
@@ -220,18 +221,90 @@ async def list_tasks(current_user: User = Depends(get_current_user), db: Session
         print(f"Error in list_tasks: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch tasks")
 
+
+@app.delete("/task/{task_id}")
+async def delete_task(
+    task_id: str, 
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    """Delete a task and cleanup associated resources"""
+    try:
+        # Find the task
+        task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
+        if not task:
+            raise HTTPException(404, "Task not found")
+        
+        # Cleanup GCP images if they exist
+        if task.image_urls:
+            try:
+                await gcp_storage.cleanup_task_images(task_id)
+                print(f"✅ Cleaned up GCP images for task {task_id}")
+            except Exception as gcp_error:
+                print(f"⚠️ Failed to cleanup GCP images: {gcp_error}")
+                # Don't fail deletion if cleanup fails
+        
+        # Delete from database
+        db.delete(task)
+        db.commit()
+        
+        return {"message": f"Task {task_id} deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Failed to delete task: {str(e)}")
+    
+    
 @app.get("/result/{task_id}")
 async def get_result(task_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
     if not task:
         raise HTTPException(404, "Task ID not found")
     
+    # ✅ NEW: Auto-generate report and cleanup on first result access
+    if task.status == "SUCCESS" and task.result:
+        
+        # Generate AI report if not already done
+        if not task.ai_report:
+            try:
+                print(f"Generating AI report for task {task_id} on result access...")
+                ai_report = await llama_service.generate_comprehensive_report(task_id, current_user.id, db)
+                
+                # Save report to database
+                task.ai_report = ai_report
+                db.commit()
+                print(f"✅ AI report generated and cached for task {task_id}")
+                
+            except Exception as e:
+                print(f"⚠️ Failed to generate AI report: {e}")
+                # Set a fallback message
+                task.ai_report = "AI report generation failed. Please use the chat feature for detailed analysis."
+                db.commit()
+        
+        # ✅ NEW: Delete GCP images on first successful result access
+        # Only delete if images haven't been cleaned up yet (check if image_urls exist)
+        if task.image_urls:
+            try:
+                print(f"Cleaning up GCP images for task {task_id}...")
+                await gcp_storage.cleanup_task_images(task_id)
+                
+                # Clear image_urls to indicate cleanup is done
+                task.image_urls = None
+                db.commit()
+                print(f"✅ GCP images cleaned up for task {task_id}")
+                
+            except Exception as gcp_error:
+                print(f"⚠️ Failed to cleanup GCP images for task {task_id}: {gcp_error}")
+                # Don't fail the request if cleanup fails
+    
     return {
         "status": task.status,
         "result": json.loads(task.result) if task.result else None,
         "patient_name": task.patient_name,
         "date": task.date,
-        "created_at": task.created_at.isoformat()
+        "created_at": task.created_at.isoformat(),
+        "ai_report": task.ai_report  # Return cached or newly generated report
     }
 
 @app.post("/retry/{task_id}")
@@ -271,3 +344,46 @@ async def retry_task(task_id: str, current_user: User = Depends(get_current_user
         
     except Exception as e:
         raise HTTPException(500, f"Retry failed: {str(e)}")
+    
+@app.post("/chat/{task_id}")
+async def chat_with_task(
+    task_id: str, 
+    message: dict,
+    current_user: User = Depends(get_current_user), 
+    db: Session = Depends(get_db)
+):
+    try:
+        user_message = message.get("message", "").strip()
+        if not user_message:
+            raise HTTPException(400, "Empty message")
+        
+        response = await llama_service.chat(task_id, current_user.id, user_message, db)
+        return {"response": response}
+        
+    except Exception as e:
+        raise HTTPException(500, str(e))
+    
+@app.get("/chat/{task_id}/history")
+async def get_chat_history(
+    task_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
+        if not task:
+            raise HTTPException(404, "Task not found")
+        
+        messages = []
+        if task.last_chat_history:
+            history = json.loads(task.last_chat_history)
+            for qa in history:
+                messages.extend([
+                    {"role": "user", "content": qa["user"]},
+                    {"role": "assistant", "content": qa["assistant"]}
+                ])
+        
+        return {"messages": messages}
+        
+    except Exception as e:
+        raise HTTPException(500, str(e))

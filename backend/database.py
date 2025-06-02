@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine, Column, String, DateTime, JSON
+from sqlalchemy import create_engine, Column, String, DateTime, JSON, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
@@ -29,9 +29,13 @@ class Task(Base):
     status = Column(String, default="PENDING")
     result = Column(JSON, nullable=True)
     patient_name = Column(String, nullable=True)
+    phone_number = Column(String, nullable=True)
+    sex = Column(String, nullable=True)
     date = Column(String, nullable=True)
     image_urls = Column(String, nullable=True) 
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_chat_history = Column(String, nullable=True)
+    ai_report = Column(Text, nullable=True)  # ✅ NEW: Cached AI report
 
 Base.metadata.create_all(bind=engine)
 

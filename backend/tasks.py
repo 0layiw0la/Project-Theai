@@ -3,6 +3,7 @@ import json
 import torch
 import asyncio
 import requests
+import time
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from celery_app import celery_app
@@ -27,6 +28,17 @@ def process_malaria_images(self, task_id: str, image_urls: list):
     
     temp_files = []
     
+    # ✅ ADD: Calculate timeout (15 min + 2 min per queued task)
+    db = SessionLocal()
+    queued_tasks = db.query(Task).filter(Task.status == "PROCESSING").count()
+    db.close()
+    
+    timeout_minutes = 15 + ((queued_tasks-1) * 4) # 15 min + 4 min per queued task
+    start_time = time.time()
+    timeout_seconds = timeout_minutes * 60
+    
+    print(f"Task {task_id} timeout set to {timeout_minutes} minutes ({queued_tasks} queued tasks)")
+    
     try:        
         # Configure threads
         configure_pytorch_threads()
@@ -40,8 +52,17 @@ def process_malaria_images(self, task_id: str, image_urls: list):
             db.commit()
         db.close()
         
+        # ✅ Check timeout before each major step
+        def check_timeout():
+            if time.time() - start_time > timeout_seconds:
+                raise TimeoutError(f"Task exceeded {timeout_minutes} minute timeout")
+        
+        check_timeout()
+        
         # Download images from URLs to temp files
         for i, url in enumerate(image_urls):
+            check_timeout()  # ✅ Check timeout during downloads
+            
             if url.startswith('http'):
                 # Download from GCP URL
                 response = requests.get(url)
@@ -53,18 +74,21 @@ def process_malaria_images(self, task_id: str, image_urls: list):
                 # Local file path
                 temp_files.append(url)
         
+        check_timeout()
+        
         # Load models
         asexual_model = YOLO(os.getenv("ASEXUAL_MODEL_PATH"))
         rbc_model = YOLO(os.getenv("RBC_MODEL_PATH"))
         stage_model = YOLO(os.getenv("STAGE_MODEL_PATH"))
+        
+        check_timeout()
         
         # Process images
         result = calculate_parasite_density(
             temp_files, asexual_model, rbc_model, stage_model, 500, 5
         )
         
-        
-        # Update to SUCCESS
+        # Update to SUCCESS with results
         db = SessionLocal()
         task = db.query(Task).filter(Task.id == task_id).first()
         if task:
@@ -80,22 +104,46 @@ def process_malaria_images(self, task_id: str, image_urls: list):
                     os.remove(file_path)
                 except:
                     pass
-        # Delete images from GCP on success
-        try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(gcp_storage.cleanup_task_images(task_id))
-            finally:
-                loop.close()
-        except Exception as gcp_error:
-            print(f"⚠️  Failed to cleanup GCP images for task {task_id}: {gcp_error}")
         
+        elapsed_time = (time.time() - start_time) / 60
+        print(f"✅ Task {task_id} completed in {elapsed_time:.1f} minutes")
         return result
+        
+    except TimeoutError as timeout_error:
+        # ✅ Handle timeout
+        error_msg = str(timeout_error)
+        print(f"⏱️ Task {task_id} timed out: {error_msg}")
+        
+        # Clean up temp files
+        for file_path in temp_files:
+            if file_path.startswith('/tmp/'):
+                try:
+                    os.remove(file_path)
+                except:
+                    pass
+        
+        # Mark as failed due to timeout
+        try:
+            db = SessionLocal()
+            task = db.query(Task).filter(Task.id == task_id).first()
+            if task:
+                task.status = "FAILED"
+                task.result = json.dumps({
+                    "error": error_msg,
+                    "timeout": True,
+                    "elapsed_minutes": (time.time() - start_time) / 60
+                })
+                db.commit()
+            db.close()
+        except Exception as db_error:
+            print(f"Failed to update timeout status: {db_error}")
+        
+        return {"error": error_msg}
         
     except Exception as e:
         error_msg = f"Processing error: {str(e)}"
-        print(f"Task {task_id} failed: {error_msg}")
+        elapsed_time = (time.time() - start_time) / 60
+        print(f"Task {task_id} failed after {elapsed_time:.1f} minutes: {error_msg}")
         
         # Clean up temp files
         for file_path in temp_files:
@@ -111,7 +159,10 @@ def process_malaria_images(self, task_id: str, image_urls: list):
             task = db.query(Task).filter(Task.id == task_id).first()
             if task:
                 task.status = "FAILED"
-                task.result = json.dumps({"error": error_msg})
+                task.result = json.dumps({
+                    "error": error_msg,
+                    "elapsed_minutes": elapsed_time
+                })
                 db.commit()
             db.close()
         except Exception as db_error:
@@ -121,7 +172,7 @@ def process_malaria_images(self, task_id: str, image_urls: list):
 
 @celery_app.task
 def cleanup_orphaned_tasks():
-    """Clean up stuck tasks"""
+    """Clean up stuck tasks - MANUAL ONLY"""
     try:
         db = SessionLocal()
         now = datetime.utcnow()

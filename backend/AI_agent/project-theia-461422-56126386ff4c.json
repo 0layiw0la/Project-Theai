@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "project-theia-461422",
+  "private_key_id": "56126386ff4ca31ca5deb563d7aafa641effc136",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCexwmDViD9fwCh\nkit/XZlQmycDUK5DfUT3D4I+IR+BD7DkseIjJQ9JQnr/bN1fOYKs47ki3SltmyJT\nDLTA3YJvQOXYzBFwTiTgvW6Yz1XkUyOHwXeGyU7wJEkD7lqj/IjR3eR2+DXis0Xb\ngjQ9DIm1NsImx8GJrVKqifaxeqMqO4pS0OLDVOWRVKrFuqJpCXgshF5n2eFWffgn\nGvfchC3iNZ47e5cxOb9yzCiCNj/b1gKBJ4wgklkL/KAIIhFrvEe7jRr/jJz4qjqs\n3DzgzzRdpklJ0qD/z32Q4JYqQQwgYaxk5PDTAj8T46p+NsydWbKBNNutbIPeApNu\nHkgLvvazAgMBAAECggEAFlzlP5zNZ7bQEXGjc7xsoBhCLeraqIHHyV5jUznaFJTv\nrr5JIfcRyJk29qvQIB3bBFvMkxcAQ0JC2tyixrlMKjxDQz42xJEVC5xSq+4j5FU7\nX18F5TOMTTFnIUkcdhVW9ewhRgpemI/0al7T2bde2+ma/dhLr4b8ai2lU8j4mzVv\n0jEXGvB6HLq70O3NVR8E64PtZp8FN7zlkc+hN0Xu3liMxfQ9Q55PckLJs0fkxdtI\n+BiD27nUPXO57YApQ7FqpIQUJZABXLbuaLHtew5V2jXzG+VYPtmqZjhDzJyEz5Rp\nkK3hAZyndNzMZkbEf8Oe6P8c7GTTpG9U6b5h1nBOYQKBgQDLUD1sJ/5jOKQE94wI\nkRqSn404vs1+Y93Bu6O6JffMEIrD7ehlc5VYq+7lYo05GVq39LL177WHnO0m1FRZ\nzB0BjOg1DL0gyEY/KONHfiWL6qntNnQpdN6CdGMZbHOS8WJQgRW0D5iLy/vNrikF\npKmXOUThQHdMR/CMPUFTEbni4QKBgQDH7EtKdAXCgO/BZXfvx6S8BI8slCOXMRR3\nL+a0LqIQ91xAOdPyjXAtISHnwGsp9hRRtRYckem6sqnROWdGHJne3EuaiRHh+ykd\nA82+bj8wbaqToaV9fH6K/D6kJCWLmKiMDDSylAZQKJnFEfkmNah5j1opHai2JMqB\nhipHCHcgEwKBgCGdvsonQrR9JQF9PLYd59rebqc3RRrkwEHMGKIqrPIcuhTzPT2p\nAsSKiRF8XgVW390SpJRtcgJePAfzi47dZN5gwfQjixHki1jeFdY4UVT1E+uY2VQR\ncsj3HXuSpvlg1/Sfo0sGWR6kN5omdbntI+1RFsZ3tkHykx9c8XQetjGBAoGABIuY\nwp6UqvFnggweh/MQCb5IywirLnrNLlCGfD47LQuSq1slOHSCwmPoc25qgU+48oqd\ncBTZLYd2WO1nLa7kyK5VgbPwFiUxsBkwCk5TXXSA1k5shsfX0K0fd3fi6qOT4Ws9\nn3nCEvx5UoOwGHBL3kemEx07grifagZ025yTqMUCgYEAq+gga9VcozplqLnxDCdT\nEEMMZibyZb56bMX7Wxi66OjxLUjgzHzGDD5S4vM/jwo3ZN9q/FKP5LWJThNfd8Tb\nWjVw9epJEJHmuhRUthCd8ajwQnSJjfUsLDjg+5X4XqN7QXR7Nsp/vSiuNUHLLwxJ\nJuOIPKcD6nPKL/y9q0kOgQk=\n-----END PRIVATE KEY-----\n",
+  "client_email": "theia-llama-service@project-theia-461422.iam.gserviceaccount.com",
+  "client_id": "102378881166188995098",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/theia-llama-service%40project-theia-461422.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
