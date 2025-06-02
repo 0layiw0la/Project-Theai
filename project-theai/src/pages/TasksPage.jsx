@@ -127,10 +127,10 @@ export default function TasksPage() {
     return (
         <>
             <Logo showHomeButton={true}/>
-            <div className="p-5">
+            <div className="p-10">
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold">All Tasks</h1>
-                    <div className="flex gap-2">
+                    <h1 className="text-2xl font-[500] text-main">All Tasks</h1>
+                    <div className="flex gap-4">
                         <button 
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
                             onClick={refreshTasks}

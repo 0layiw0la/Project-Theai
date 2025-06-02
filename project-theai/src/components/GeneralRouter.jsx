@@ -8,86 +8,93 @@ import TasksPage from "../pages/TasksPage";
 import ResultPage from "../pages/ResultPage";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
+import InfoFormPage from "../pages/InfoFormPage";
 
 // Protected route component - simplified
-function ProtectedRoute({ children }) {
-  const { currentUser, loading, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+// function ProtectedRoute({ children }) {
+//   const { currentUser, loading, isAuthenticated } = useAuth();
+//   const navigate = useNavigate();
 
-  // Only redirect if loading is done and not authenticated
-  useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      navigate('/login', { 
-        replace: true,
-        state: { message: 'Please login to continue.' }
-      });
-    }
-  }, [loading, isAuthenticated, navigate]);
+//   // Only redirect if loading is done and not authenticated
+//   useEffect(() => {
+//     if (!loading && !isAuthenticated) {
+//       navigate('/login', { 
+//         replace: true,
+//         state: { message: 'Please login to continue.' }
+//       });
+//     }
+//   }, [loading, isAuthenticated, navigate]);
 
-  // Show loading while checking authentication
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-main"></div>
-        <p className="ml-4">Loading...</p>
-      </div>
-    );
-  }
+//   // Show loading while checking authentication
+//   if (loading) {
+//     return (
+//       <div className="flex justify-center items-center min-h-screen">
+//         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-main"></div>
+//         <p className="ml-4">Loading...</p>
+//       </div>
+//     );
+//   }
 
-  // Show children only if authenticated
-  return isAuthenticated ? children : null;
-}
+//   // Show children only if authenticated
+//   return isAuthenticated ? children : null;
+// }
 
-// Public route - redirects to dashboard if already authenticated
-function PublicRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+// // Public route - redirects to dashboard if already authenticated
+// function PublicRoute({ children }) {
+//   const { isAuthenticated, loading } = useAuth();
   
-  if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-main"></div>
-    </div>;
-  }
+//   if (loading) {
+//     return <div className="flex justify-center items-center min-h-screen">
+//       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-main"></div>
+//     </div>;
+//   }
   
-  return isAuthenticated ? <Navigate to="/" /> : children;
-}
+//   return isAuthenticated ? <Navigate to="/" /> : children;
+// }
 
 export default function GeneralRouter() {
   return (
     <Routes>
       <Route path="/login" element={
-        <PublicRoute>
+        // <PublicRoute>
           <LoginPage />
-        </PublicRoute>
+        // </PublicRoute>
       } />
       
       <Route path="/register" element={
-        <PublicRoute>
+        // <PublicRoute>
           <RegisterPage />
-        </PublicRoute>
+        // </PublicRoute>
       } />
       
       <Route path="/" element={
-        <ProtectedRoute>
+        // <ProtectedRoute>
           <LandingPage />
-        </ProtectedRoute>
+        // </ProtectedRoute>
+      } />
+
+      <Route path="/form" element={
+        // <ProtectedRoute>
+          <InfoFormPage />
+        // </ProtectedRoute>
       } />
       
       <Route path="/upload" element={
-        <ProtectedRoute>
+        // <ProtectedRoute>
           <UploadPage />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       } />
       
       <Route path="/tasks" element={
-        <ProtectedRoute>
+        // <ProtectedRoute>
           <TasksPage />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       } />
       
       <Route path="/result/:taskId" element={
-        <ProtectedRoute>
+        // <ProtectedRoute>
           <ResultPage />
-        </ProtectedRoute>
+        // </ProtectedRoute>
       } />
       
       <Route path="*" element={<Navigate to="/" />} />

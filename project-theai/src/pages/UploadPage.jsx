@@ -1,10 +1,14 @@
 import { useState, useRef } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import Logo from "../components/Logo";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function UploadPage(){
     const navigate = useNavigate();
+    const location = useLocation();
+
+  const { firstName, lastName, tel } = location.state || {};
+
     const { token } = useAuth();
     const [uploading, setUploading] = useState(false);
     const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
@@ -16,84 +20,82 @@ export default function UploadPage(){
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        
-        // ✅ UPDATE: Check both uploaded files AND captured photos
-        const totalImages = (imgs ? imgs.length : 0) + capturedPhotos.length;
-        if (totalImages === 0) {
-            setImgError("Please select at least one image or take photos");
-            return;
-        }
-        
-        setUploading(true);
-        const formData = new FormData();
+   const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        // ✅ ADD: Append captured photos
-        capturedPhotos.forEach((photo, index) => {
-            formData.append("files", photo, `captured_${index}.jpg`);
+    // ✅ UPDATE: Check both uploaded files AND captured photos
+    const totalImages = (imgs ? imgs.length : 0) + capturedPhotos.length;
+    if (totalImages === 0) {
+        setImgError("Please select at least one image or take photos");
+        return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+
+    // ✅ ADD: Append captured photos
+    capturedPhotos.forEach((photo, index) => {
+        formData.append("files", photo, `captured_${index}.jpg`);
+    });
+
+    // Append uploaded files
+    if (imgs) {
+        for (let i = 0; i < imgs.length; i++) {
+            formData.append("files", imgs[i]);
+        }
+    }
+
+    // ✅ COMBINE firstName and lastName into fullName
+    const fullName = `${firstName || ""} ${lastName || ""}`.trim();
+    formData.append("fullName", fullName);
+
+    // ✅ Include tel as is
+    formData.append("tel", tel || "");
+
+    // ✅ ADD: Current date (when submit is clicked)
+    const date = new Date().toISOString();
+    formData.append("date", date);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/submit`, {
+            method: "POST",
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
         });
 
-        // Append uploaded files
-        if (imgs) {
-            for (let i = 0; i < imgs.length; i++) {
-                formData.append("files", imgs[i]);
-            }
-        }
-
-        formData.append("patientName", patientName || "");
-        formData.append("date", date || "");
-
-         try {
-            const response = await fetch(`${API_BASE_URL}/submit`, {
-                method: "POST",
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
-
-            if (response.status === 401) {
+        if (response.status === 401) {
             localStorage.removeItem('token');
             alert('Session expired. Please login again.');
             navigate('/login');
             return;
-            }
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error("Upload failed:", errorData);
-                setImgError("Upload failed. Please try again.");
-                return;
-            }
-            
-            const data = await response.json();
-            console.log("Upload succeeded, task_id:", data.task_id);
-            
-            navigate(`/tasks`);
-            
-        } catch (error) {
-            console.error("Network error:", error);
-            setImgError("Network error. Please check your connection.");
-        } finally {
-            setUploading(false);
         }
-    };
 
-    const [textInput, setTextInput] = useState({
-        patientName: "",
-        date: "",
-    });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error("Upload failed:", errorData);
+            setImgError("Upload failed. Please try again.");
+            return;
+        }
+
+        const data = await response.json();
+        console.log("Upload succeeded, task_id:", data.task_id);
+
+        navigate(`/tasks`);
+    } catch (error) {
+        console.error("Network error:", error);
+        setImgError("Network error. Please check your connection.");
+    } finally {
+        setUploading(false);
+    }
+};
+
 
     const [imgs, setImgs] = useState(null);
     const [imgErrror, setImgError] = useState("")
 
-    const {patientName, date} = textInput
-
-    const handleChange = (e) => {
-        const {name, value} = e.target;
-        setTextInput({...textInput, [name]: value })
-    }
+  
 
     const handleImageChange = (e) => {
         const validTypes = ["image/jpeg", "image/png", "image/jpg"];
@@ -178,43 +180,17 @@ export default function UploadPage(){
         <>
         <Logo showHomeButton={true}/>
          <section className="mt-[40px] min-h-screen m-[20px]">
-            <div className="flex flex-col md:flex-row justify-around p-[20px] gap-[10px]"> 
-                <div className="flex flex-col gap-[5px] w-[300px]">
-                    <label htmlFor="patients-name" className="text-[16px] md:text-[18px] font-[500]">Patient's Name</label>
-                    <input 
-                        type="text" 
-                        name="patientName" 
-                        value={patientName} 
-                        onChange={handleChange} 
-                        placeholder="Patient's name (optional)" 
-                        className="py-3 px-10 rounded-lg border border-txt focus:outline-none focus:ring-1 focus:ring-complementary transition text-[12px] md:text-[15px] font-roboto"
-                        disabled={uploading}
-                    />
-                </div>
-
-                <div className="flex flex-col gap-[5px] w-[300px]">
-                    <label htmlFor="date" className="text-[16px] md:text-[18px] font-[500]">Date</label>
-                    <input 
-                        type="date" 
-                        name="date" 
-                        value={date} 
-                        onChange={handleChange} 
-                        className="py-3 px-10 rounded-lg border focus:outline-none focus:ring-1 focus:ring-complementary transition text-[12px] md:text-[15px] font-roboto"
-                        disabled={uploading}
-                    />
-                </div>
-            </div>
-
+            
             <div className="px-[2vw] flex flex-col justify-center items-center mt-[50px]">
-                <h1 className="text-[30px] md:text-[35px] font-poppins font-[600]">Upload Images</h1>
-                <p className="text-center mt-[10px] text-[16px] md:text-[19px]">Upload clear microscopic images of blood smears for malaria detection.</p>
+                <h1 className="text-[30px] md:text-5xl font-poppins font-[400] text-main mb-3">Upload Images</h1>
+                <p className="text-center mt-[10px] text-[16px] md:text-[19px] mb-[25px] text-main font-['Kelly_Slab']">Upload clear microscopic images of blood smears for malaria detection.</p>
 
                 {/* ✅ ADD: Camera button */}
                 {!showCamera && (
                     <button
                         onClick={startCamera}
                         disabled={uploading}
-                        className="mb-4 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
+                        className="mb-4 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 lg:hidden"
                     >
                         📷 Take Photos
                     </button>
@@ -296,7 +272,7 @@ export default function UploadPage(){
                         <p className="text-center mb-4 font-medium">
                             {imgs.length} file{imgs.length > 1 ? 's' : ''} selected
                         </p>
-                        <div className="grid grid-cols-4 md:grid-cols-5 gap-4">
+                        <div className="grid grid-cols-4 md:grid-cols-5 gap-4 ">
                             {Array.from(imgs).map((img,index) => (
                                 <div key={index} className="relative">
                                     <img
