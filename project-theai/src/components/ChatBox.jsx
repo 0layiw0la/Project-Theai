@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function ChatBox({ taskId, isVisible, onClose }) {
     const [messages, setMessages] = useState([]);
@@ -72,6 +74,19 @@ export default function ChatBox({ taskId, isVisible, onClose }) {
         }
     };
 
+    // Custom components for markdown styling
+    const markdownComponents = {
+        h1: ({children}) => <h1 className="text-lg font-bold text-gray-800 mb-2">{children}</h1>,
+        h2: ({children}) => <h2 className="text-base font-bold text-gray-800 mb-2">{children}</h2>,
+        h3: ({children}) => <h3 className="text-sm font-bold text-gray-800 mb-1">{children}</h3>,
+        p: ({children}) => <p className="text-gray-800 mb-2">{children}</p>,
+        strong: ({children}) => <strong className="font-bold text-gray-900">{children}</strong>,
+        code: ({children}) => <code className="bg-gray-200 px-1 rounded text-sm">{children}</code>,
+        ul: ({children}) => <ul className="list-disc list-inside mb-2 text-gray-800">{children}</ul>,
+        ol: ({children}) => <ol className="list-decimal list-inside mb-2 text-gray-800">{children}</ol>,
+        li: ({children}) => <li className="mb-1">{children}</li>
+    };
+
     if (!isVisible) return null;
 
     return (
@@ -100,7 +115,16 @@ export default function ChatBox({ taskId, isVisible, onClose }) {
                                         ? 'bg-main text-white' 
                                         : 'bg-gray-100 text-gray-800 border'
                                 }`}>
-                                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                                    {msg.role === 'assistant' ? (
+                                        <ReactMarkdown 
+                                            remarkPlugins={[remarkGfm]}
+                                            components={markdownComponents}
+                                        >
+                                            {msg.content}
+                                        </ReactMarkdown>
+                                    ) : (
+                                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                                    )}
                                 </div>
                             </div>
                         ))

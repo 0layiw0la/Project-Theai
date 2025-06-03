@@ -4,6 +4,8 @@ import { useAuth } from "../contexts/AuthContext";
 import Logo from "../components/Logo";
 import ChatBox from '../components/ChatBox';
 import chatIcon from '../assets/chat-icon.png';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function ResultPage() {
     const { taskId } = useParams();
@@ -68,7 +70,6 @@ export default function ResultPage() {
                     <h1>Malaria Diagnostic Report</h1>
                     <p><strong>Patient:</strong> ${data.patient_name || 'Not specified'}</p>
                     <p><strong>Sex:</strong> ${data.sex || 'Not specified'}</p>
-                    <p><strong>Phone:</strong> ${data.phone_number || 'Not specified'}</p>
                     <p><strong>Date:</strong> ${data.date || 'Not specified'}</p>
                 </div>
                 
@@ -178,7 +179,7 @@ export default function ResultPage() {
             <div className="p-5 mt-5 max-w-4xl mx-auto">
                 {/* Header */}
                 <div className="mb-4 flex justify-between items-center">
-                    <h1 className="text-4xl md:text-7xl font-bold text-main">Results</h1>
+                    <h1 className="text-4xl md:text-7xl font-poppins text-main">Results</h1>
                     <button 
                         className="px-4 py-2 bg-main text-white rounded-md hover:bg-complementary"
                         onClick={() => navigate('/tasks')}
@@ -188,46 +189,39 @@ export default function ResultPage() {
                 </div>
                 
                 {/* ✅ UPDATED: Patient Information Section */}
-                <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-                    <h3 className="text-xl font-bold mb-4 text-gray-800">Patient Information</h3>
+                <div className="bg-white shadow-md rounded-lg p-6">
+                    <h3 className="text-xl font-bold mb-4 text-main">Patient Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <p className="text-gray-600 text-sm">Patient Name</p>
-                            <p className="font-medium text-lg">{data.patient_name || "Not specified"}</p>
+                            <p className="text-gray-600 text-sm text-main font-bold">Patient Name</p>
+                            <p className="text-complementary text-2xl font-['Kelly_Slab'] ">{data.patient_name || "Not specified"}</p>
                         </div>
                         <div>
-                            <p className="text-gray-600 text-sm">Sex</p>
-                            <p className="font-medium text-lg">{data.sex || "Not specified"}</p>
+                            <p className="text-gray-600 text-sm text-main font-bold">Sex</p>
+                            <p className="text-complementary text-2xl font-['Kelly_Slab']">{data.sex || "Not specified"}</p>
                         </div>
                         <div>
-                            <p className="text-gray-600 text-sm">Test Date</p>
-                            <p className="font-medium text-lg">
+                            <p className="text-gray-600 text-sm text-main font-bold">Test Date</p>
+                            <p className="text-complementary text-2xl font-['Kelly_Slab']">
                                 {data.date ? new Date(data.date).toLocaleDateString() : "Not specified"}
                             </p>
                         </div>
-                        {/* Optional: Show phone number */}
-                        {data.phone_number && (
-                            <div className="md:col-span-3">
-                                <p className="text-gray-600 text-sm">Phone Number</p>
-                                <p className="font-medium">{data.phone_number}</p>
-                            </div>
-                        )}
                     </div>
                 </div>
 
                 {/* ✅ UPDATED: Analysis Results Section */}
                 <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="text-xl font-bold mb-4">Analysis Results</h3>
+                    <div className="">
+                        <h3 className="text-xl font-bold text-main mb-4">Analysis Results</h3>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Parasite Density */}
                             {result.average_parasite_density_per_1000_rbc !== undefined && (
                                 <div className="bg-white p-4 rounded shadow">
-                                    <h4 className="font-medium text-gray-500">Parasite Density</h4>
+                                    <h4 className="font-[Kelly_Slab] text-complementary">Parasite Density</h4>
                                     <p className="text-2xl font-bold">
                                         {parseFloat(result.average_parasite_density_per_1000_rbc).toFixed(2)}
-                                        <span className="text-sm font-normal text-gray-500"> per 1000 RBCs</span>
+                                        <span className="text-sm font-[Kelly_Slab] text-complementary font-normal"> per 1000 RBCs</span>
                                     </p>
                                 </div>
                             )}
@@ -235,7 +229,7 @@ export default function ResultPage() {
                             {/* Parasitemia Percentage */}
                             {result.average_parasitemia_percent !== undefined && (
                                 <div className="bg-white p-4 rounded shadow">
-                                    <h4 className="font-medium text-gray-500">Parasitemia</h4>
+                                    <h4 className="font-[Kelly_Slab] text-complementary">Parasitemia</h4>
                                     <p className="text-2xl font-bold">
                                         {parseFloat(result.average_parasitemia_percent).toFixed(2)}%
                                     </p>
@@ -246,12 +240,12 @@ export default function ResultPage() {
                         {/* Stage Counts */}
                         {result.average_stage_counts && Object.keys(result.average_stage_counts).length > 0 && (
                             <div className="mt-6">
-                                <h4 className="font-medium mb-2">Parasite Stages</h4>
+                                <h4 className="text-main text-xl font-bold">Parasite Stages</h4>
                                 <div className="bg-white p-4 rounded shadow">
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         {Object.entries(result.average_stage_counts).map(([stage, count]) => (
                                             <div key={stage}>
-                                                <p className="text-gray-500 capitalize">{stage}</p>
+                                                <p className="font-[Kelly_Slab] text-complementary capitalize">{stage}</p>
                                                 <p className="text-xl font-semibold">{parseFloat(count).toFixed(1)}</p>
                                             </div>
                                         ))}
@@ -274,10 +268,10 @@ export default function ResultPage() {
                                 ✕
                             </button>
                         </div>
-                        <div className="prose max-w-none">
-                            <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
+                        <div className="prose max-w-none prose-headings:text-gray-800 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                 {data.ai_report}
-                            </div>
+                            </ReactMarkdown>
                         </div>
                         <div className="mt-4 text-xs text-gray-500 border-t pt-4">
                             <p>⚠️ This AI-generated report is for reference only. Always consult with a qualified healthcare professional for medical decisions.</p>

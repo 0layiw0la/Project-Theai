@@ -171,10 +171,10 @@ export default function TasksPage() {
                                 <button
                                     onClick={(e) => deleteTask(id, e)}
                                     disabled={deletingTasks.has(id)}
-                                    className={`absolute top-2 right-2 w-6 h-6 text-sm font-bold transition-colors ${
+                                    className={`absolute top-2 right-2 w-8 h-8 text-xl font-bold transition-colors ${
                                         deletingTasks.has(id) 
-                                            ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
-                                            : "bg-red-500 text-white hover:bg-red-600"
+                                            ? "bg-transparent text-gray-500 cursor-not-allowed" 
+                                            : "bg-transparent text-2xl text-red-600 hover:cursor-pointer"
                                     }`}
                                     title="Delete task"
                                 >
@@ -197,7 +197,9 @@ export default function TasksPage() {
                                         task.status === "PROCESSING" ? "text-yellow-600" :
                                         "text-blue-600"
                                     }`}>
-                                        {task.status === "PROCESSING" && <span className="animate-pulse mr-1">🔄</span>}
+                                        {task.status === "PROCESSING" && (
+                                            <div className="animate-spin mr-1 w-4 h-4 border-2 border-yellow-600 border-t-transparent rounded-full"></div>
+                                        )}
                                         {task.status}
                                         {/* Retry option for failed tasks */}
                                         {task.status === "FAILED" && (
