@@ -2,314 +2,295 @@ import { useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router";
 import Logo from "../components/Logo";
 import { useAuth } from "../contexts/AuthContext";
+import FileIcon from "../assets/file.png";
+import CameraComponent from "../components/CameraComponent";
 
-export default function UploadPage(){
+export default function UploadPage() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { firstName, lastName, tel, sex } = location.state || {}; 
+    const { firstName, lastName, tel, sex } = location.state || {};
 
     const { token } = useAuth();
     const [uploading, setUploading] = useState(false);
     const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
 
-    // ✅ ADD: Camera state
+    // Modal and Camera state (only for mobile)
+    const [showModal, setShowModal] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
-    const [stream, setStream] = useState(null);
     const [capturedPhotos, setCapturedPhotos] = useState([]);
-    const videoRef = useRef(null);
-    const canvasRef = useRef(null);
-
-   const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // ✅ UPDATE: Check both uploaded files AND captured photos
-    const totalImages = (imgs ? imgs.length : 0) + capturedPhotos.length;
-    if (totalImages === 0) {
-        setImgError("Please select at least one image or take photos");
-        return;
-    }
-
-    setUploading(true);
-    const formData = new FormData();
-
-    // ✅ ADD: Append captured photos
-    capturedPhotos.forEach((photo, index) => {
-        formData.append("files", photo, `captured_${index}.jpg`);
-    });
-
-    // Append uploaded files
-    if (imgs) {
-        for (let i = 0; i < imgs.length; i++) {
-            formData.append("files", imgs[i]);
-        }
-    }
-
-    // ✅ COMBINE firstName and lastName into fullName
-    const fullName = `${firstName || ""} ${lastName || ""}`.trim();
-    formData.append("patientName", fullName);
-
-    // ✅ Include tel as is
-    formData.append("tel", tel || "");
-
-    formData.append("sex", sex || "");
-
-    // ✅ ADD: Current date (when submit is clicked)
-    const date = new Date().toISOString();
-    formData.append("date", date);
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/submit`, {
-            method: "POST",
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: formData
-        });
-
-        if (response.status === 401) {
-            localStorage.removeItem('token');
-            alert('Session expired. Please login again.');
-            navigate('/login');
-            return;
-        }
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("Upload failed:", errorData);
-            setImgError("Upload failed. Please try again.");
-            return;
-        }
-
-        const data = await response.json();
-        console.log("Upload succeeded, task_id:", data.task_id);
-
-        navigate(`/tasks`);
-    } catch (error) {
-        console.error("Network error:", error);
-        setImgError("Network error. Please check your connection.");
-    } finally {
-        setUploading(false);
-    }
-};
-
+    const fileInputRef = useRef(null);
 
     const [imgs, setImgs] = useState(null);
-    const [imgErrror, setImgError] = useState("")
+    const [imgErrror, setImgError] = useState("");
 
-  
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        const totalImages = (imgs ? imgs.length : 0) + capturedPhotos.length;
+        if (totalImages === 0) {
+            setImgError("Please select at least one image or take photos");
+            return;
+        }
+
+        setUploading(true);
+        const formData = new FormData();
+
+        capturedPhotos.forEach((photo, index) => {
+            formData.append("files", photo, `captured_${index}.jpg`);
+        });
+
+        if (imgs) {
+            for (let i = 0; i < imgs.length; i++) {
+                formData.append("files", imgs[i]);
+            }
+        }
+
+        const fullName = `${firstName || ""} ${lastName || ""}`.trim();
+        formData.append("patientName", fullName);
+        formData.append("tel", tel || "");
+        formData.append("sex", sex || "");
+
+        const date = new Date().toISOString();
+        formData.append("date", date);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/submit`, {
+                method: "POST",
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                alert('Session expired. Please login again.');
+                navigate('/login');
+                return;
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error("Upload failed:", errorData);
+                setImgError("Upload failed. Please try again.");
+                return;
+            }
+
+            const data = await response.json();
+            console.log("Upload succeeded, task_id:", data.task_id);
+
+            navigate(`/tasks`);
+        } catch (error) {
+            console.error("Network error:", error);
+            setImgError("Network error. Please check your connection.");
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const handleImageChange = (e) => {
         const validTypes = ["image/jpeg", "image/png", "image/jpg"];
         const files = e.target.files;
-        
+
         if (files.length === 0) {
             setImgError("");
             setImgs(null);
             return;
         }
-        
-        for (let i = 0; i < files.length; i++){
-           const file = files[i]
-           
-           if(!validTypes.includes(file.type)){
-             return setImgError("Only JPG, JPEG, and PNG formats allowed.")
-          }
-          if(file.size > 5 * 1024 * 1024){
-            return setImgError("Image size must be under 5MB.")
-          }
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+
+            if (!validTypes.includes(file.type)) {
+                return setImgError("Only JPG, JPEG, and PNG formats allowed.");
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                return setImgError("Image size must be under 5MB.");
+            }
         }
         setImgs(files);
         setImgError('');
-    }
-
-    // ✅ ADD: Camera functions
-    const startCamera = async () => {
-        try {
-            const mediaStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' }
-            });
-            setStream(mediaStream);
-            setShowCamera(true);
-            setTimeout(() => {
-                if (videoRef.current) {
-                    videoRef.current.srcObject = mediaStream;
-                }
-            }, 100);
-        } catch (error) {
-            setImgError("Camera access denied.");
-        }
+        setShowModal(false);
     };
 
-    const stopCamera = () => {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-            setStream(null);
-        }
-        setShowCamera(false);
-    };
+    const openModal = () => setShowModal(true);
+    const closeModal = () => setShowModal(false);
+    const openFileDialog = () => fileInputRef.current?.click();
 
-    const capturePhoto = () => {
-        if (videoRef.current && canvasRef.current) {
-            const video = videoRef.current;
-            const canvas = canvasRef.current;
-            const context = canvas.getContext('2d');
-            
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    const file = new File([blob], `capture_${Date.now()}.jpg`, {
-                        type: 'image/jpeg'
-                    });
-                    setCapturedPhotos(prev => [...prev, file]);
-                    setImgError("");
-                }
-            }, 'image/jpeg', 0.9);
-        }
+    // Camera
+    const handleAddPhoto = (photo) => {
+        setCapturedPhotos(prev => [...prev, photo]);
     };
 
     const deletePhoto = (index) => {
         setCapturedPhotos(prev => prev.filter((_, i) => i !== index));
     };
 
-    // ✅ UPDATE: Calculate total images
     const totalImages = (imgs ? imgs.length : 0) + capturedPhotos.length;
 
-    return(
+    return (
         <>
-        <Logo showHomeButton={true}/>
-         <section className="mt-[40px] min-h-screen m-[20px]">
-            
-            <div className="px-[2vw] flex flex-col justify-center items-center mt-[50px]">
-                <h1 className="text-[30px] md:text-5xl font-poppins font-[400] text-main mb-3">Upload Images</h1>
-                <p className="text-center mt-[10px] text-[16px] md:text-[19px] mb-[25px] text-main font-['Kelly_Slab']">Upload clear microscopic images of blood smears for malaria detection.</p>
+            <Logo showHomeButton={true} />
+            <section className="mt-[40px] min-h-screen m-[20px]">
+                <div className="px-[2vw] flex flex-col justify-center items-center mt-[50px]">
+                    <h1 className="text-[30px] md:text-5xl font-poppins font-[400] text-main mb-3">Upload Images</h1>
+                    <p className="text-center mt-[10px] text-[16px] md:text-[19px] mb-[25px] text-complementary font-['Kelly_Slab']">
+                        Upload atleast 10 clear microscopic images of blood smears for malaria detection.
+                    </p>
 
-                {/* ✅ ADD: Camera button */}
-                {!showCamera && (
-                    <button
-                        onClick={startCamera}
-                        disabled={uploading}
-                        className="mb-4 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 lg:hidden"
-                    >
-                        📷 Take Photos
-                    </button>
-                )}
+                    {/* Mobile: Single Button with Modal */}
+                    <div className="md:hidden w-[60%] mb-8">
+                        <button
+                            onClick={openModal}
+                            disabled={uploading}
+                            className="w-full py-[50px] rounded-[20px] border border-dashed border-black flex flex-col items-center justify-center hover:border-main transition-colors bg-transparent disabled:bg-gray-100"
+                        >
+                            <img src={FileIcon} alt="Upload files" className="w-16 h-16 mb-2" />
+                            <span className="text-[16px] text-main font-['Kelly_Slab']">Add Images</span>
+                        </button>
+                    </div>
 
-                {/* ✅ ADD: Camera interface */}
-                {showCamera && (
-                    <div className="mb-4 w-full max-w-2xl">
-                        <div className="relative bg-black rounded-lg overflow-hidden">
-                            <video
-                                ref={videoRef}
-                                autoPlay
-                                playsInline
-                                className="w-full h-[400px] object-cover"
+                    {/* Desktop: File Upload Only */}
+                    <div className="hidden md:flex justify-center w-full max-w-4xl">
+                        <div className="relative w-[60%] md:w-[40%]">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageChange}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                disabled={uploading}
                             />
-                            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+                            <div className="py-[70px] rounded-[20px] border border-dashed border-black flex flex-col items-center justify-center hover:border-main transition-colors">
+                                <img src={FileIcon} alt="Upload files" className="w-16 h-16 mb-2" />
+                                <span className="text-[18px] text-main">Choose Files</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Hidden File Input for Mobile */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageChange}
+                        className="hidden"
+                        disabled={uploading}
+                    />
+
+                    {imgErrror && (
+                        <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                            {imgErrror}
+                        </div>
+                    )}
+
+                    {/* Show captured photos */}
+                    {capturedPhotos.length > 0 && (
+                        <div className="mt-[5vh]">
+                            <p className="text-center mb-4 font-medium">
+                                {capturedPhotos.length} photo{capturedPhotos.length > 1 ? 's' : ''} captured
+                            </p>
+                            <div className="grid grid-cols-4 md:grid-cols-5 gap-4">
+                                {capturedPhotos.map((photo, index) => (
+                                    <div key={index} className="relative">
+                                        <img
+                                            src={URL.createObjectURL(photo)}
+                                            alt={`Captured ${index + 1}`}
+                                            className="w-[80px] h-[80px] object-cover rounded border"
+                                        />
+                                        <button
+                                            onClick={() => deletePhoto(index)}
+                                            className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white rounded-full text-xs"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {imgs && (
+                        <div className="mt-[5vh]">
+                            <p className="text-center mb-4 font-medium">
+                                {imgs.length} file{imgs.length > 1 ? 's' : ''} selected
+                            </p>
+                            <div className="grid grid-cols-4 md:grid-cols-5 gap-4 ">
+                                {Array.from(imgs).map((img, index) => (
+                                    <div key={index} className="relative">
+                                        <img
+                                            src={URL.createObjectURL(img)}
+                                            alt={`Preview ${index + 1}`}
+                                            className="w-[80px] h-[80px] object-cover rounded border"
+                                        />
+                                        <p className="text-xs text-center mt-1 truncate">
+                                            {img.name}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <button
+                        onClick={handleSubmit}
+                        disabled={uploading || totalImages === 0}
+                        className={`w-[60%] md:w-[25vw]  py-3 text-accent text-md font-poppins rounded-lg mt-[30px] transition duration-300 ease-in-out transform cursor-pointer ${
+                            uploading || totalImages === 0
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-main hover:bg-complementary hover:scale-105'
+                        }`}
+                    >
+                        {uploading ? 'Processing...' : `Start Analysis (${totalImages} images)`}
+                    </button>
+
+                    {uploading && (
+                        <div className="mt-4 text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-main mx-auto"></div>
+                            <p className="mt-2 text-gray-600">Uploading images and starting analysis...</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Modal - ONLY shows on mobile */}
+                {showModal && (
+                    <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg p-6 w-[90%] max-w-md">
+                            <h2 className="text-xl font-poppins text-main mb-4 text-center">Choose Upload Method</h2>
+                            <div className="flex flex-col items-center">
+                                <div className="flex gap-5 justify-center mb-6">
+                                    <button
+                                        onClick={openFileDialog}
+                                        className="py-2 px-6 bg-main bg-opacity-55 text-white rounded-lg hover:bg-opacity-70 transition-colors font-['Kelly_Slab'] text-[16px]"
+                                    >
+                                        Browse Files
+                                    </button>
+                                    <button
+                                        onClick={() => { setShowModal(false); setShowCamera(true); }}
+                                        className="py-2 px-6 bg-main bg-opacity-55 text-white rounded-lg hover:bg-opacity-70 transition-colors font-['Kelly_Slab'] text-[16px]"
+                                    >
+                                        Take Photo
+                                    </button>
+                                </div>
                                 <button
-                                    onClick={capturePhoto}
-                                    className="w-16 h-16 bg-white rounded-full border-4 border-blue-500"
+                                    onClick={closeModal}
+                                    className="w-[80%] py-2 px-6 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors font-['Kelly_Slab']"
                                 >
-                                    📷
-                                </button>
-                                <button
-                                    onClick={stopCamera}
-                                    className="px-4 py-2 bg-red-500 text-white rounded-lg"
-                                >
-                                    Done
+                                    Cancel
                                 </button>
                             </div>
                         </div>
                     </div>
                 )}
 
-                <canvas ref={canvasRef} className="hidden" />
-
-                <input 
-                    type="file" 
-                    accept="image/*" 
-                    multiple 
-                    onChange={handleImageChange} 
-                    className="px-[2vw] py-[100px] mt-[20px] rounded-[20px] border border-dashed focus:outline-none focus:ring-1 focus:ring-main transition text-[16px] md:text-[18px]" 
-                    disabled={uploading}
+                {/* CameraComponent Modal */}
+                <CameraComponent
+                    isOpen={showCamera}
+                    onClose={() => setShowCamera(false)}
+                    onPhotoAdd={handleAddPhoto}
                 />
-
-                {imgErrror && (
-                    <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-                        {imgErrror}
-                    </div>
-                )}
-
-                {/* ✅ ADD: Show captured photos */}
-                {capturedPhotos.length > 0 && (
-                    <div className="mt-[5vh]">
-                        <p className="text-center mb-4 font-medium">
-                            {capturedPhotos.length} photo{capturedPhotos.length > 1 ? 's' : ''} captured
-                        </p>
-                        <div className="grid grid-cols-4 md:grid-cols-5 gap-4">
-                            {capturedPhotos.map((photo, index) => (
-                                <div key={index} className="relative">
-                                    <img
-                                        src={URL.createObjectURL(photo)}
-                                        alt={`Captured ${index + 1}`}
-                                        className="w-[80px] h-[80px] object-cover rounded border"
-                                    />
-                                    <button
-                                        onClick={() => deletePhoto(index)}
-                                        className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white rounded-full text-xs"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {imgs && (
-                    <div className="mt-[5vh]">
-                        <p className="text-center mb-4 font-medium">
-                            {imgs.length} file{imgs.length > 1 ? 's' : ''} selected
-                        </p>
-                        <div className="grid grid-cols-4 md:grid-cols-5 gap-4 ">
-                            {Array.from(imgs).map((img,index) => (
-                                <div key={index} className="relative">
-                                    <img
-                                        src={URL.createObjectURL(img)}
-                                        alt={`Preview ${index + 1}`}
-                                        className="w-[80px] h-[80px] object-cover rounded border"
-                                    />
-                                    <p className="text-xs text-center mt-1 truncate">
-                                        {img.name}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                <button 
-                    onClick={handleSubmit} 
-                    disabled={uploading || totalImages === 0}
-                    className={`px-[90px] md:px-[110px] py-[10px] text-accent text-[25px] font-poppins rounded-lg mt-[30px] transition duration-300 ease-in-out transform cursor-pointer ${
-                        uploading || totalImages === 0
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-main hover:bg-complementary hover:scale-105'
-                    }`}
-                >
-                    {uploading ? 'Processing...' : `Start Analysis (${totalImages} images)`}
-                </button>
-
-                {uploading && (
-                    <div className="mt-4 text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-main mx-auto"></div>
-                        <p className="mt-2 text-gray-600">Uploading images and starting analysis...</p>
-                    </div>
-                )}
-            </div>
-         </section>
+            </section>
         </>
-    )
+    );
 }

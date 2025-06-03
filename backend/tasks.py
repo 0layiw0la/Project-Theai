@@ -16,79 +16,70 @@ from gcp_storage import gcp_storage
 
 load_dotenv()
 
-def configure_pytorch_threads():
-    """Configure PyTorch to use 2 threads per worker"""
-    torch.set_num_threads(2)
-    torch.set_num_interop_threads(2)
-    os.environ['OMP_NUM_THREADS'] = '2'
-    os.environ['MKL_NUM_THREADS'] = '2'
+def configure_8vcpu_threads():
+    """Configure for 8-vCPU processing"""
+    torch.set_num_threads(8)
+    torch.set_num_interop_threads(8)
+    os.environ['OMP_NUM_THREADS'] = '8'
+    os.environ['MKL_NUM_THREADS'] = '8'
 
 @celery_app.task(bind=True, autoretry_for=(WorkerLostError, ConnectionError, OSError))
 def process_malaria_images(self, task_id: str, image_urls: list):
     
+    configure_8vcpu_threads()
+    
     temp_files = []
     
-    # ✅ ADD: Calculate timeout (15 min + 2 min per queued task)
     db = SessionLocal()
     queued_tasks = db.query(Task).filter(Task.status == "PROCESSING").count()
     db.close()
     
-    timeout_minutes = 15 + ((queued_tasks-1) * 4) # 15 min + 4 min per queued task
+    timeout_minutes = 15 + (queued_tasks * 1)
     start_time = time.time()
     timeout_seconds = timeout_minutes * 60
     
     print(f"Task {task_id} timeout set to {timeout_minutes} minutes ({queued_tasks} queued tasks)")
+    print(f"Using 8-vCPU single-task processing mode")
     
     try:        
-        # Configure threads
-        configure_pytorch_threads()
-        
-        # Update status to PROCESSING
         db = SessionLocal()
         task = db.query(Task).filter(Task.id == task_id).first()
         if task:
             task.status = "PROCESSING"
-            task.result = json.dumps({"status": "processing_started"})
+            task.result = json.dumps({"status": "processing_started", "mode": "8-vCPU_single_task"})
             db.commit()
         db.close()
         
-        # ✅ Check timeout before each major step
         def check_timeout():
             if time.time() - start_time > timeout_seconds:
                 raise TimeoutError(f"Task exceeded {timeout_minutes} minute timeout")
         
         check_timeout()
         
-        # Download images from URLs to temp files
         for i, url in enumerate(image_urls):
-            check_timeout()  # ✅ Check timeout during downloads
+            check_timeout()
             
             if url.startswith('http'):
-                # Download from GCP URL
                 response = requests.get(url)
                 temp_file = f"/tmp/task_{task_id}_img_{i}.jpg"
                 with open(temp_file, 'wb') as f:
                     f.write(response.content)
                 temp_files.append(temp_file)
             else:
-                # Local file path
                 temp_files.append(url)
         
         check_timeout()
         
-        # Load models
         asexual_model = YOLO(os.getenv("ASEXUAL_MODEL_PATH"))
         rbc_model = YOLO(os.getenv("RBC_MODEL_PATH"))
         stage_model = YOLO(os.getenv("STAGE_MODEL_PATH"))
         
         check_timeout()
         
-        # Process images
         result = calculate_parasite_density(
-            temp_files, asexual_model, rbc_model, stage_model, 500, 5
+            temp_files, asexual_model, rbc_model, stage_model, 1000, 5
         )
         
-        # Update to SUCCESS with results
         db = SessionLocal()
         task = db.query(Task).filter(Task.id == task_id).first()
         if task:
@@ -97,7 +88,6 @@ def process_malaria_images(self, task_id: str, image_urls: list):
             db.commit()
         db.close()
         
-        # Clean up temp files
         for file_path in temp_files:
             if file_path.startswith('/tmp/'):
                 try:
@@ -106,15 +96,13 @@ def process_malaria_images(self, task_id: str, image_urls: list):
                     pass
         
         elapsed_time = (time.time() - start_time) / 60
-        print(f"✅ Task {task_id} completed in {elapsed_time:.1f} minutes")
+        print(f"✅ Task {task_id} completed in {elapsed_time:.1f} minutes using 8-vCPU processing")
         return result
         
     except TimeoutError as timeout_error:
-        # ✅ Handle timeout
         error_msg = str(timeout_error)
         print(f"⏱️ Task {task_id} timed out: {error_msg}")
         
-        # Clean up temp files
         for file_path in temp_files:
             if file_path.startswith('/tmp/'):
                 try:
@@ -122,7 +110,6 @@ def process_malaria_images(self, task_id: str, image_urls: list):
                 except:
                     pass
         
-        # Mark as failed due to timeout
         try:
             db = SessionLocal()
             task = db.query(Task).filter(Task.id == task_id).first()
@@ -131,7 +118,8 @@ def process_malaria_images(self, task_id: str, image_urls: list):
                 task.result = json.dumps({
                     "error": error_msg,
                     "timeout": True,
-                    "elapsed_minutes": (time.time() - start_time) / 60
+                    "elapsed_minutes": (time.time() - start_time) / 60,
+                    "mode": "8-vCPU_single_task"
                 })
                 db.commit()
             db.close()
@@ -145,7 +133,6 @@ def process_malaria_images(self, task_id: str, image_urls: list):
         elapsed_time = (time.time() - start_time) / 60
         print(f"Task {task_id} failed after {elapsed_time:.1f} minutes: {error_msg}")
         
-        # Clean up temp files
         for file_path in temp_files:
             if file_path.startswith('/tmp/'):
                 try:
@@ -153,7 +140,6 @@ def process_malaria_images(self, task_id: str, image_urls: list):
                 except:
                     pass
         
-        # Mark as failed
         try:
             db = SessionLocal()
             task = db.query(Task).filter(Task.id == task_id).first()
@@ -161,7 +147,8 @@ def process_malaria_images(self, task_id: str, image_urls: list):
                 task.status = "FAILED"
                 task.result = json.dumps({
                     "error": error_msg,
-                    "elapsed_minutes": elapsed_time
+                    "elapsed_minutes": elapsed_time,
+                    "mode": "8-vCPU_single_task"
                 })
                 db.commit()
             db.close()
@@ -172,15 +159,14 @@ def process_malaria_images(self, task_id: str, image_urls: list):
 
 @celery_app.task
 def cleanup_orphaned_tasks():
-    """Clean up stuck tasks - MANUAL ONLY"""
+    """Clean up stuck tasks"""
     try:
         db = SessionLocal()
         now = datetime.utcnow()
         
-        # Find tasks stuck in PROCESSING for more than 2 hours
         stuck_tasks = db.query(Task).filter(
             Task.status == "PROCESSING",
-            Task.created_at < now - timedelta(hours=2)
+            Task.created_at < now - timedelta(hours=1)
         ).all()
         
         cleanup_count = 0
