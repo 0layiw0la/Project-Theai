@@ -31,28 +31,6 @@ export default function InfoFormPage() {
       <h1 className="text-2xl font-[400] mb-6 text-center font-poppins text-main md:text-5xl">Fill in Patient's Information</h1>
       <form onSubmit={handleSubmit} className="flex flex-col justify-center gap-5">
         <div className='flex flex-col gap-4'>
-        <label className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Patient's Name</label>
-        <div className='flex flex-col md:flex-row justify-between gap-[15px] md:gap-[30px]'>
-        <input
-          type="text"
-          name="firstName"
-          placeholder="First Name"
-          value={formData.firstName}
-          onChange={handleChange}
-          className="border border-[#055B5D] py-3 px-5 rounded font-['Kelly_Slab']"
-          required
-        />
-        <input
-          type="text"
-          name="lastName"
-          placeholder="Last Name"
-          value={formData.lastName}
-          onChange={handleChange}
-          className="border border-[#055B5D] py-3 px-5 rounded font-['Kelly_Slab']"
-          required
-        />
-        </div>
-        </div>
         
         {/* ✅ UPDATED: Phone first (larger), then Sex (smaller) with equal heights */}
         <div className='flex flex-col md:flex-row justify-between gap-[15px] md:gap-[30px]'>
@@ -84,6 +62,7 @@ export default function InfoFormPage() {
               <option value="Other">Other</option>
             </select>
           </div>
+
         </div>
 
         <button
