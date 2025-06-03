@@ -12,7 +12,6 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-
 # Install PyTorch separately (this will be cached)
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install torch 
@@ -22,13 +21,15 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install torchvision
 
 RUN apt-get update && apt-get install -y libpq-dev gcc
-# Install PyTorch separately (this will be cached)
+
+# Install other dependencies with caching
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install psycopg2-binary==2.9.9
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install langchain-core langchain-community langchain-google-vertexai google-cloud-aiplatform nltk
-    # Copy requirements first for better caching
+
+# Copy requirements first for better caching
 COPY requirements.txt .
 
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -36,11 +37,24 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 
 RUN python -c "import nltk; nltk.download('stopwords')"
 
-# Copy the rest of the application
+# ✅ PRODUCTION: Set Python environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# ✅ PRODUCTION: Copy GCP service account key
+COPY gcp-service-account.json /app/gcp-service-account.json
+
+# ✅ PRODUCTION: Set GCP credentials
+ENV GOOGLE_APPLICATION_CREDENTIALS=/app/gcp-service-account.json
+
+# ✅ PRODUCTION: Copy application code
 COPY . .
 
-# Create uploads directory
+# ✅ PRODUCTION: Create uploads directory
 RUN mkdir -p uploads
 
-# Default command (can be overridden)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# ✅ PRODUCTION: Expose port
+EXPOSE 8000
+
+# ✅ PRODUCTION: Run with production settings
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

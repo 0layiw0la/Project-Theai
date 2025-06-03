@@ -6,8 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 export default function UploadPage(){
     const navigate = useNavigate();
     const location = useLocation();
-
-  const { firstName, lastName, tel } = location.state || {};
+    const { firstName, lastName, tel, sex } = location.state || {}; 
 
     const { token } = useAuth();
     const [uploading, setUploading] = useState(false);
@@ -47,10 +46,12 @@ export default function UploadPage(){
 
     // ✅ COMBINE firstName and lastName into fullName
     const fullName = `${firstName || ""} ${lastName || ""}`.trim();
-    formData.append("fullName", fullName);
+    formData.append("patientName", fullName);
 
     // ✅ Include tel as is
     formData.append("tel", tel || "");
+
+    formData.append("sex", sex || "");
 
     // ✅ ADD: Current date (when submit is clicked)
     const date = new Date().toISOString();

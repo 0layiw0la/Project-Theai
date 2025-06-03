@@ -142,6 +142,8 @@ async def validate_token(current_user: User = Depends(get_current_user)):
 @app.post("/submit")
 async def submit_images(files: List[UploadFile] = File(...), 
                         patientName: str = Form(None), 
+                        tel: str = Form(None),  # ✅ ADD: Phone parameter
+                        sex: str = Form(None),  # ✅ ADD: Sex parameter
                         date: str = Form(None),
                         current_user: User = Depends(get_current_user),
                         db: Session = Depends(get_db)):
@@ -153,14 +155,17 @@ async def submit_images(files: List[UploadFile] = File(...),
     try:
         # Upload to GCP and get URLs
         image_urls = await gcp_storage.upload_images(files, task_id)
-        # Create task with URLs
+        
+        # ✅ UPDATE: Create task with all patient information
         new_task = Task(
             id=task_id,
             user_id=current_user.id,
             status="PROCESSING",
             patient_name=patientName,
+            phone_number=tel,  # ✅ ADD: Store phone
+            sex=sex,           # ✅ ADD: Store sex
             date=date,
-            image_urls=json.dumps(image_urls)  # Store URLs as JSON
+            image_urls=json.dumps(image_urls)
         )
         db.add(new_task)
         db.commit()
@@ -168,7 +173,17 @@ async def submit_images(files: List[UploadFile] = File(...),
         # Queue task with URLs instead of file paths
         process_malaria_images.delay(task_id, image_urls)
         
-        return {"task_id": task_id, "status": "PENDING", "images_uploaded": len(image_urls)}
+        return {
+            "task_id": task_id, 
+            "status": "PENDING", 
+            "images_uploaded": len(image_urls),
+            "patient_info": {  # ✅ ADD: Return patient info
+                "name": patientName,
+                "phone": tel,
+                "sex": sex,
+                "date": date
+            }
+        }
         
     except Exception as e:
         await gcp_storage.cleanup_task_images(task_id)
@@ -255,14 +270,13 @@ async def delete_task(
     except Exception as e:
         raise HTTPException(500, f"Failed to delete task: {str(e)}")
     
-    
 @app.get("/result/{task_id}")
 async def get_result(task_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
     if not task:
         raise HTTPException(404, "Task ID not found")
     
-    # ✅ NEW: Auto-generate report and cleanup on first result access
+    # Auto-generate report and cleanup on first result access
     if task.status == "SUCCESS" and task.result:
         
         # Generate AI report if not already done
@@ -282,8 +296,7 @@ async def get_result(task_id: str, current_user: User = Depends(get_current_user
                 task.ai_report = "AI report generation failed. Please use the chat feature for detailed analysis."
                 db.commit()
         
-        # ✅ NEW: Delete GCP images on first successful result access
-        # Only delete if images haven't been cleaned up yet (check if image_urls exist)
+        # Delete GCP images on first successful result access
         if task.image_urls:
             try:
                 print(f"Cleaning up GCP images for task {task_id}...")
@@ -302,9 +315,11 @@ async def get_result(task_id: str, current_user: User = Depends(get_current_user
         "status": task.status,
         "result": json.loads(task.result) if task.result else None,
         "patient_name": task.patient_name,
+        "phone_number": task.phone_number,  # ✅ ADD: Return phone number
+        "sex": task.sex,                    # ✅ ADD: Return sex
         "date": task.date,
         "created_at": task.created_at.isoformat(),
-        "ai_report": task.ai_report  # Return cached or newly generated report
+        "ai_report": task.ai_report
     }
 
 @app.post("/retry/{task_id}")

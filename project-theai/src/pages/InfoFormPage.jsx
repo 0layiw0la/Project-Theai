@@ -6,7 +6,8 @@ export default function InfoFormPage() {
   const [formData, setFormData] = useState({ 
     firstName: "", 
     lastName: "", 
-    tel: "" 
+    tel: "",
+    sex: ""
   });
 
   const navigate = useNavigate();
@@ -31,14 +32,14 @@ export default function InfoFormPage() {
       <form onSubmit={handleSubmit} className="flex flex-col justify-center gap-5">
         <div className='flex flex-col gap-4'>
         <label className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Patient's Name</label>
-        <div className='flex flex-col md:flex-row justify-between gap-[20px] md:gap-[50px]'>
+        <div className='flex flex-col md:flex-row justify-between gap-[15px] md:gap-[30px]'>
         <input
           type="text"
           name="firstName"
           placeholder="First Name"
           value={formData.firstName}
           onChange={handleChange}
-          className="border py-3 px-5 rounded font-['Kelly_Slab']"
+          className="border border-[#055B5D] py-3 px-5 rounded font-['Kelly_Slab']"
           required
         />
         <input
@@ -47,26 +48,47 @@ export default function InfoFormPage() {
           placeholder="Last Name"
           value={formData.lastName}
           onChange={handleChange}
-          className="border py-3 px-5 rounded font-['Kelly_Slab']"
+          className="border border-[#055B5D] py-3 px-5 rounded font-['Kelly_Slab']"
           required
         />
         </div>
         </div>
-        <div className='flex flex-col gap-4'>
-        <label className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Patient Phone No.:</label>
-        <input
-          type="number"
-          name="tel"
-          placeholder="Phone Number"
-          value={formData.tel}
-          onChange={handleChange}
-          className="border py-3 px-5 rounded font-['Kelly_Slab']"
-          required
-        />
+        
+        {/* ✅ UPDATED: Phone first (larger), then Sex (smaller) with equal heights */}
+        <div className='flex flex-col md:flex-row justify-between gap-[15px] md:gap-[30px]'>
+          <div className='flex flex-col gap-4 flex-3'>
+            <label className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Patient Phone No.:</label>
+            <input
+              type="tel"
+              name="tel"
+              placeholder="Phone Number"
+              value={formData.tel}
+              onChange={handleChange}
+              className="border border-[#055B5D] py-3 px-5 rounded font-['Kelly_Slab'] h-[52px]"
+              required
+            />
+          </div>
+
+          <div className='flex flex-col gap-4 flex-1'>
+            <label className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Sex</label>
+            <select
+              name="sex"
+              value={formData.sex}
+              onChange={handleChange}
+              className="border border-[#055B5D] py-3 px-5 rounded font-['Kelly_Slab'] bg-transparent h-[52px]"
+              required
+            >
+              <option value="">Select</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
         </div>
+
         <button
           type="submit"
-          className="px-[90px] md:px-[110px] py-[10px] text-accent text-[25px] font-['Kelly_Slab'] rounded-lg mt-[30px] transition duration-300 ease-in-out transform cursor-pointer bg-main hover:bg-complementary hover:scale-105"
+          className="px-[90px] self-center md:px-[60px] md:w-[45%]  py-[10px] text-accent text-[25px] font-['Kelly_Slab'] rounded-lg mt-[30px] transition duration-300 ease-in-out transform cursor-pointer bg-main hover:bg-complementary hover:scale-105"
         >
           Proceed
         </button>

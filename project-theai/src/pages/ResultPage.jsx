@@ -11,7 +11,7 @@ export default function ResultPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showChat, setShowChat] = useState(false);
-    const [showReport, setShowReport] = useState(false); // ✅ NEW: Toggle report visibility
+    const [showReport, setShowReport] = useState(false);
     const navigate = useNavigate();
     const { token } = useAuth();
     const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
@@ -46,7 +46,6 @@ export default function ResultPage() {
         fetchResult();
     }, [taskId, token, navigate]);
 
-    // ✅ NEW: Print function for comprehensive report
     const printReport = () => {
         const printWindow = window.open('', '_blank');
         const reportContent = `
@@ -68,6 +67,8 @@ export default function ResultPage() {
                 <div class="header">
                     <h1>Malaria Diagnostic Report</h1>
                     <p><strong>Patient:</strong> ${data.patient_name || 'Not specified'}</p>
+                    <p><strong>Sex:</strong> ${data.sex || 'Not specified'}</p>
+                    <p><strong>Phone:</strong> ${data.phone_number || 'Not specified'}</p>
                     <p><strong>Date:</strong> ${data.date || 'Not specified'}</p>
                 </div>
                 
@@ -186,21 +187,37 @@ export default function ResultPage() {
                     </button>
                 </div>
                 
-                {/* Patient Info */}
+                {/* ✅ UPDATED: Patient Information Section */}
                 <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-                    <div className="mb-6 grid grid-cols-2 gap-4">
+                    <h3 className="text-xl font-bold mb-4 text-gray-800">Patient Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <p className="text-gray-600">Patient</p>
+                            <p className="text-gray-600 text-sm">Patient Name</p>
                             <p className="font-medium text-lg">{data.patient_name || "Not specified"}</p>
                         </div>
                         <div>
-                            <p className="text-gray-600">Date</p>
-                            <p className="font-medium">{data.date || "Not specified"}</p>
+                            <p className="text-gray-600 text-sm">Sex</p>
+                            <p className="font-medium text-lg">{data.sex || "Not specified"}</p>
                         </div>
+                        <div>
+                            <p className="text-gray-600 text-sm">Test Date</p>
+                            <p className="font-medium text-lg">
+                                {data.date ? new Date(data.date).toLocaleDateString() : "Not specified"}
+                            </p>
+                        </div>
+                        {/* Optional: Show phone number */}
+                        {data.phone_number && (
+                            <div className="md:col-span-3">
+                                <p className="text-gray-600 text-sm">Phone Number</p>
+                                <p className="font-medium">{data.phone_number}</p>
+                            </div>
+                        )}
                     </div>
+                </div>
 
-                    {/* Main Results */}
-                    <div className="bg-gray-50 p-4 rounded-lg mb-6">
+                {/* ✅ UPDATED: Analysis Results Section */}
+                <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+                    <div className="bg-gray-50 p-4 rounded-lg">
                         <h3 className="text-xl font-bold mb-4">Analysis Results</h3>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -245,7 +262,7 @@ export default function ResultPage() {
                     </div>
                 </div>
 
-                {/* ✅ NEW: AI Medical Report Section (Hidden by default) */}
+                {/* AI Medical Report Section */}
                 {data.ai_report && showReport && (
                     <div className="bg-white shadow-md rounded-lg p-6 mb-6 border-l-4 border-blue-500">
                         <div className="flex justify-between items-center mb-4">
@@ -272,7 +289,6 @@ export default function ResultPage() {
                 <div className="bg-white shadow-md rounded-lg p-6">
                     <h3 className="text-xl font-bold mb-4">Actions</h3>
                     <div className="flex flex-wrap gap-4">
-                        {/* ✅ MOVED: Show/Hide Report Button */}
                         {data.ai_report && (
                             <button
                                 onClick={() => setShowReport(!showReport)}
@@ -283,7 +299,6 @@ export default function ResultPage() {
                             </button>
                         )}
                         
-                        {/* ✅ UPDATED: Print now includes AI report */}
                         <button 
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
                             onClick={printReport}
@@ -300,10 +315,10 @@ export default function ResultPage() {
                 </div>
             </div>
 
-            {/* ✅ FIXED: Ask AI Button - Positioned Bottom Right */}
+            {/* Ask AI Button */}
             <button
                 onClick={() => setShowChat(true)}
-                className="fixed bottom-5 right-5 md:right-15  z-50"
+                className="fixed bottom-5 right-5 md:right-15 z-50"
             >
                 <img src={chatIcon} alt="Chat Icon" className="w-[60px] h-[60px]" />
             </button>

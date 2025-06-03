@@ -137,7 +137,7 @@ export default function TasksPage() {
                     <div>
                         <button 
                             className="px-4 py-2 bg-main text-white rounded-md hover:bg-complementary"
-                            onClick={() => navigate('/upload')}
+                            onClick={() => navigate('/form')}
                         >
                             + New Test
                         </button>
