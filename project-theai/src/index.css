@@ -1,11 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Kelly+Slab&display=swap');
+
 @import "tailwindcss";
 
 @theme {
   --font-roboto: Roboto, san-serif;
   --font-poppins: Poppins, sans-serif;
-  --font-script: Great Vibes, cursive;
+  --font-script: 'Great Vibes', cursive;
+  --font-kelly: 'Kelly Slab', cursive;
 
   --color-main: #077A7D;
   --color-complementary: #7AE2CF;
-  --color-accent: #F4F7FA;
+  --color-accent: #F5EEDD;
 }

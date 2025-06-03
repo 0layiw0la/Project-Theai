@@ -8,6 +8,7 @@ import TasksPage from "../pages/TasksPage";
 import ResultPage from "../pages/ResultPage";
 import LoginPage from "../pages/LoginPage";
 import RegisterPage from "../pages/RegisterPage";
+import InfoFormPage from "../pages/InfoFormPage";
 
 // Protected route component - simplified
 function ProtectedRoute({ children }) {
@@ -69,6 +70,12 @@ export default function GeneralRouter() {
       <Route path="/" element={
         <ProtectedRoute>
           <LandingPage />
+       </ProtectedRoute>
+      } />
+
+      <Route path="/form" element={
+        <ProtectedRoute>
+          <InfoFormPage />
         </ProtectedRoute>
       } />
       
