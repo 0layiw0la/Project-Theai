@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import Logo from "../components/Logo";
 import ChatBox from '../components/ChatBox';
+import chatIcon from '../assets/chat-icon.png';
 
 export default function ResultPage() {
     const { taskId } = useParams();
@@ -173,36 +174,16 @@ export default function ResultPage() {
     return (
         <>
             <Logo showHomeButton={true}/>
-            <div className="p-5 max-w-4xl mx-auto">
-                {/* Header with Action Buttons */}
+            <div className="p-5 mt-5 max-w-4xl mx-auto">
+                {/* Header */}
                 <div className="mb-4 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold">Test Results</h1>
-                    <div className="flex gap-2">
-                        {/* ✅ NEW: Show/Hide Report Button */}
-                        {data.ai_report && (
-                            <button
-                                onClick={() => setShowReport(!showReport)}
-                                className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 flex items-center gap-2 transition-colors"
-                            >
-                                <span>📋</span>
-                                <span>{showReport ? 'Hide' : 'Show'} AI Report</span>
-                            </button>
-                        )}
-                        
-                        <button
-                            onClick={() => setShowChat(true)}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 flex items-center gap-2 transition-colors"
-                        >
-                            <span>💬</span>
-                            <span>Ask AI</span>
-                        </button>
-                        <button 
-                            className="px-4 py-2 bg-main text-white rounded-md hover:bg-complementary"
-                            onClick={() => navigate('/tasks')}
-                        >
-                            Back to Tasks
-                        </button>
-                    </div>
+                    <h1 className="text-4xl md:text-7xl font-bold text-main">Results</h1>
+                    <button 
+                        className="px-4 py-2 bg-main text-white rounded-md hover:bg-complementary"
+                        onClick={() => navigate('/tasks')}
+                    >
+                        Back to Tasks
+                    </button>
                 </div>
                 
                 {/* Patient Info */}
@@ -291,6 +272,17 @@ export default function ResultPage() {
                 <div className="bg-white shadow-md rounded-lg p-6">
                     <h3 className="text-xl font-bold mb-4">Actions</h3>
                     <div className="flex flex-wrap gap-4">
+                        {/* ✅ MOVED: Show/Hide Report Button */}
+                        {data.ai_report && (
+                            <button
+                                onClick={() => setShowReport(!showReport)}
+                                className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 flex items-center gap-2 transition-colors"
+                            >
+                                <span>📋</span>
+                                <span>{showReport ? 'Hide' : 'Show'} AI Report</span>
+                            </button>
+                        )}
+                        
                         {/* ✅ UPDATED: Print now includes AI report */}
                         <button 
                             className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
@@ -304,15 +296,17 @@ export default function ResultPage() {
                         >
                             ➕ New Test
                         </button>
-                        <button
-                            onClick={() => setShowChat(true)}
-                            className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-                        >
-                            🩺 Discuss Results with AI
-                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* ✅ FIXED: Ask AI Button - Positioned Bottom Right */}
+            <button
+                onClick={() => setShowChat(true)}
+                className="fixed bottom-5 right-5 md:right-15  z-50"
+            >
+                <img src={chatIcon} alt="Chat Icon" className="w-[60px] h-[60px]" />
+            </button>
 
             {/* Chat Component */}
             <ChatBox

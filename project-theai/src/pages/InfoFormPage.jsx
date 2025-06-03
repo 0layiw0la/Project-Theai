@@ -26,7 +26,7 @@ export default function InfoFormPage() {
   return (
     <>
     <Logo showHomeButton={true}/>
-    <div className="p-10 lg:px-[150px] flex flex-col justify-center items-center">
+    <div className="p-10 mt-[5vh] md:mt-0 lg:px-[150px] flex flex-col justify-center items-center">
       <h1 className="text-2xl font-[400] mb-6 text-center font-poppins text-main md:text-5xl">Fill in Patient's Information</h1>
       <form onSubmit={handleSubmit} className="flex flex-col justify-center gap-5">
         <div className='flex flex-col gap-4'>

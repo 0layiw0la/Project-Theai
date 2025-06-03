@@ -8,7 +8,11 @@
   --font-script: 'Great Vibes', cursive;
   --font-kelly: 'Kelly Slab', cursive;
 
-  --color-main: #077A7D;
-  --color-complementary: #7AE2CF;
+  --color-main: #055B5D;
+  --color-complementary: #077A7D;
   --color-accent: #F5EEDD;
+}
+
+body {
+background-color: #F5EEDD;
 }

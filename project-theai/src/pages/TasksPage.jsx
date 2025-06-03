@@ -5,14 +5,16 @@ import Logo from "../components/Logo";
 
 export default function TasksPage() {
     const [tasks, setTasks] = useState({});
+    const [loading, setLoading] = useState(true);
     const [isPolling, setIsPolling] = useState(false);
     const [retryingTasks, setRetryingTasks] = useState(new Set());
-    const [deletingTasks, setDeletingTasks] = useState(new Set()); // ✅ ADD: Delete state
+    const [deletingTasks, setDeletingTasks] = useState(new Set());
     const navigate = useNavigate();
     const { token } = useAuth();
     const API_BASE_URL = import.meta.env.VITE_APP_API_URL || 'http://127.0.0.1:8000';
 
     const fetchTasks = async () => {
+        setLoading(true);
         try {
             const res = await fetch(`${API_BASE_URL}/tasks`, {
                 headers: {
@@ -34,6 +36,8 @@ export default function TasksPage() {
             
         } catch (error) {
             console.error("Error fetching tasks:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -64,7 +68,7 @@ export default function TasksPage() {
         }
     };
 
-    // ✅ ADD: Delete function
+    // Delete function
     const deleteTask = async (taskId, event) => {
         event.stopPropagation();
         
@@ -129,14 +133,8 @@ export default function TasksPage() {
             <Logo showHomeButton={true}/>
             <div className="p-10">
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-[500] text-main">All Tasks</h1>
-                    <div className="flex gap-4">
-                        <button 
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                            onClick={refreshTasks}
-                        >
-                            Refresh
-                        </button>
+                    <h1 className="text-2xl md:text-7xl font-[500] text-main">Existing Tasks</h1>
+                    <div>
                         <button 
                             className="px-4 py-2 bg-main text-white rounded-md hover:bg-complementary"
                             onClick={() => navigate('/upload')}
@@ -146,7 +144,11 @@ export default function TasksPage() {
                     </div>
                 </div>
                 
-                {Object.keys(tasks).length === 0 ? (
+                {loading ? (
+                    <div className="text-center py-10">
+                        <p className="text-gray-500">Loading tasks...</p>
+                    </div>
+                ) : Object.keys(tasks).length === 0 ? (
                     <div className="text-center py-10">
                         <p className="text-gray-500">No tasks found. Create a new test.</p>
                     </div>
@@ -155,7 +157,7 @@ export default function TasksPage() {
                         {Object.entries(tasks).map(([id, task]) => (
                             <div
                                 key={id}
-                                className={`p-4 border rounded-lg shadow cursor-pointer transition-colors relative ${
+                                className={`p-4 border shadow cursor-pointer transition-colors relative ${
                                     task.status === "SUCCESS" ? "bg-green-50 hover:bg-green-100 border-green-200" : 
                                     task.status === "FAILED" ? "bg-red-50 hover:bg-red-100 border-red-200" : 
                                     task.status === "PROCESSING" ? "bg-yellow-50 border-yellow-200" :
@@ -165,11 +167,11 @@ export default function TasksPage() {
                                     if (task.status === "SUCCESS") navigate(`/result/${id}`);
                                 }}
                             >
-                                {/* ✅ ADD: Delete button - positioned absolutely */}
+                                {/* Delete button */}
                                 <button
                                     onClick={(e) => deleteTask(id, e)}
                                     disabled={deletingTasks.has(id)}
-                                    className={`absolute top-2 right-2 w-6 h-6 rounded-full text-xs font-bold transition-colors ${
+                                    className={`absolute top-2 right-2 w-6 h-6 text-sm font-bold transition-colors ${
                                         deletingTasks.has(id) 
                                             ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
                                             : "bg-red-500 text-white hover:bg-red-600"
@@ -182,7 +184,7 @@ export default function TasksPage() {
                                 {/* Hidden task ID */}
                                 <div className="hidden">{id}</div>
                                 
-                                <p className="text-lg font-semibold pr-8"> {/* ✅ ADD: padding-right for delete button */}
+                                <p className="text-lg font-semibold pr-8">
                                     {task.patient_name || "Unnamed Patient"}
                                 </p>
                                 <p className="text-sm text-gray-500">
