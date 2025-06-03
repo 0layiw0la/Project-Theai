@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import Logo from '../components/Logo';
+import Logo from '../assets/logo.jpg';
+import LoginImg from "../assets/login-img.png"
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -33,12 +34,17 @@ export default function LoginPage() {
 
   return (
     <>
-      <Logo />
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
+      <div className="flex flex-col lg:flex-row min-h-screen">
+        <div className="lg:w-1/2 hidden lg:block">
+          <img src={LoginImg} alt='login-image' className="h-screen w-full"/>
+        </div>
+        <div className="block px-[30px] md:px-[80px] py-8 bg-white lg:w-1/2">
+        <div className='flex justify-center items-center mb-[40px] mt-10'>
+          <img src={Logo} className='w-[150px] md:w-[200px] '/>
+        </div>
           <div className="text-center">
-            <h1 className="text-3xl font-bold">Login</h1>
-            <p className="mt-2 text-gray-600">Sign in to your account</p>
+            <h1 className="text-3xl font-[400] font-poppins text-main">Login</h1>
+            <p className="mt-2 text-gray-600 font-['Kelly_Slab'] text-[16px] md:text-[20px]">Sign in to your account</p>
           </div>
           
           {error && (
@@ -48,10 +54,8 @@ export default function LoginPage() {
           )}
           
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
-              </label>
+             <div className='flex flex-col gap-2'>
+              <label htmlFor='username' className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Username:</label>
               <input
                 id="username"
                 name="username"
@@ -59,15 +63,13 @@ export default function LoginPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-complementary focus:border-complementary"
+                className="w-full font-['Kelly_Slab'] py-3 px-5 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-complementary focus:border-complementary"
                 placeholder="Username"
               />
             </div>
             
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
+            <div className='flex flex-col gap-2'>
+              <label htmlFor='password' className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Password:</label>
               <input
                 id="password"
                 name="password"
@@ -75,7 +77,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-complementary focus:border-complementary"
+                className="w-full font-['Kelly_Slab'] py-3 px-5 mt-1 border border-gray-300 rounded-md focus:outline-none focus:ring-complementary focus:border-complementary"
                 placeholder="Password"
               />
             </div>
@@ -83,19 +85,19 @@ export default function LoginPage() {
             <div>
               <button
                 type="submit"
-                className="w-full px-4 py-2 text-white bg-main rounded-md hover:bg-complementary focus:outline-none focus:bg-complementary"
+                className="w-full px-4 py-2 bg-main text-accent text-[16px] md:text-[20px] font-['Kelly_Slab'] rounded-md hover:bg-complementary focus:outline-none focus:bg-complementary"
               >
                 Sign in
               </button>
             </div>
           </form>
           
-          <div className="text-center mt-4">
+          <div className="text-center mt-4 font-['Kelly_Slab'] text-[16px] md:text-[18px]">
             <p>
               Don't have an account?{' '}
               <button 
                 onClick={() => navigate('/register')}
-                className="text-main hover:text-complementary"
+                className="text-main hover:text-complementary cursor-pointer"
               >
                 Register
               </button>

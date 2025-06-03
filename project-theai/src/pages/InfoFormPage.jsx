@@ -30,7 +30,7 @@ export default function InfoFormPage() {
       <h1 className="text-2xl font-[400] mb-6 text-center font-poppins text-main md:text-5xl">Fill in Patient's Information</h1>
       <form onSubmit={handleSubmit} className="flex flex-col justify-center gap-5">
         <div className='flex flex-col gap-4'>
-        <label className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Patient's Name</label>
+        <label htmlFor='patient name' className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Patient's Name</label>
         <div className='flex flex-col md:flex-row justify-between gap-[20px] md:gap-[50px]'>
         <input
           type="text"
@@ -38,7 +38,7 @@ export default function InfoFormPage() {
           placeholder="First Name"
           value={formData.firstName}
           onChange={handleChange}
-          className="border py-3 px-5 rounded font-['Kelly_Slab']"
+          className="border py-3 px-5 rounded font-['Kelly_Slab'] border-gray-300 rounded-md focus:outline-none focus:ring-complementary focus:border-complementary"
           required
         />
         <input
@@ -47,26 +47,26 @@ export default function InfoFormPage() {
           placeholder="Last Name"
           value={formData.lastName}
           onChange={handleChange}
-          className="border py-3 px-5 rounded font-['Kelly_Slab']"
+          className="border py-3 px-5 rounded font-['Kelly_Slab'] border-gray-300 rounded-md focus:outline-none focus:ring-complementary focus:border-complementary"
           required
         />
         </div>
         </div>
         <div className='flex flex-col gap-4'>
-        <label className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Patient Phone No.:</label>
+        <label htmlFor='patient tel' className="text-[18px] md:text-[22px] font-400 text-main font-['Kelly_Slab']">Patient Phone No.:</label>
         <input
           type="number"
           name="tel"
           placeholder="Phone Number"
           value={formData.tel}
           onChange={handleChange}
-          className="border py-3 px-5 rounded font-['Kelly_Slab']"
+          className="border py-3 px-5 rounded font-['Kelly_Slab'] border-gray-300 rounded-md focus:outline-none focus:ring-complementary focus:border-complementary"
           required
         />
         </div>
         <button
           type="submit"
-          className="px-[90px] md:px-[110px] py-[10px] text-accent text-[25px] font-['Kelly_Slab'] rounded-lg mt-[30px] transition duration-300 ease-in-out transform cursor-pointer bg-main hover:bg-complementary hover:scale-105"
+          className="px-[90px] md:px-[110px] py-[10px] text-accent text-[22px] md:text-[25px] font-['Kelly_Slab'] rounded-lg mt-[30px] transition duration-300 ease-in-out transform cursor-pointer bg-main hover:bg-complementary hover:scale-105"
         >
           Proceed
         </button>
