@@ -34,7 +34,7 @@ services:
       - ./secrets/gcp-service-account.json:/app/gcp-service-account.json:ro
     depends_on:
       - redis
-    command: celery -A celery_app worker --concurrency=2 --loglevel=info
+    command: celery -A celery_app worker --concurrency=2 --loglevel=info 
     deploy:
       resources:
         limits:
