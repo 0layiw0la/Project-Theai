@@ -39,7 +39,7 @@ export default function LoginPage() {
           <img src={LoginImg} alt='login-image' className="h-full w-full object-cover object-top"/>
         </div>
         <div className="flex flex-col justify-center px-[30px] md:px-[80px] py-4 bg-transparent lg:w-[55%] overflow-y-auto">
-          <div className='flex justify-center items-center mb-[20px]'>
+          <div className='flex justify-center items-center mb-[20px] mt-8'>
             <img src={Logo} className='w-[120px] md:w-[150px]'/>
           </div>
           <div className="text-center">
@@ -63,7 +63,7 @@ export default function LoginPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full font-['Kelly_Slab'] py-3 px-4 border border-gray-300 rounded-md focus:outline-none focus:border-gray-300 bg-transparent"
+                className="w-full font-['Kelly_Slab'] py-3 px-4 border border-gray-300 rounded-md focus:outline-none focus:border-gray-300 focus:bg-transparent"
                 placeholder="Username"
               />
             </div>

@@ -187,37 +187,37 @@ export default function ResultPage() {
                         Back to Tasks
                     </button>
                 </div>
-                
-                {/* ✅ UPDATED: Patient Information Section */}
-                <div className="bg-white shadow-md rounded-lg p-6">
-                    <h3 className="text-xl font-bold mb-4 text-main">Patient Information</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <p className="text-gray-600 text-sm text-main font-bold">Patient Name</p>
-                            <p className="text-complementary text-2xl font-['Kelly_Slab'] ">{data.patient_name || "Not specified"}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-600 text-sm text-main font-bold">Sex</p>
-                            <p className="text-complementary text-2xl font-['Kelly_Slab']">{data.sex || "Not specified"}</p>
-                        </div>
-                        <div>
-                            <p className="text-gray-600 text-sm text-main font-bold">Test Date</p>
-                            <p className="text-complementary text-2xl font-['Kelly_Slab']">
-                                {data.date ? new Date(data.date).toLocaleDateString() : "Not specified"}
-                            </p>
+              
+                <div className="border border-main bg-transparent rounded-2xl p-8 mb-6" style={{boxShadow: '-8px 7px 0px -2px rgba(186,180,180,0.75)'}}>
+                    {/* Patient Information */}
+                    <div className="mb-8">
+                        <h3 className="text-xl font-bold mb-4 text-main">Patient Information</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <p className="text-gray-600 text-sm text-main font-bold">Patient Name</p>
+                                <p className="text-complementary text-2xl font-['Kelly_Slab'] ">{data.patient_name || "Not specified"}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-600 text-sm text-main font-bold">Sex</p>
+                                <p className="text-complementary text-2xl font-['Kelly_Slab']">{data.sex || "Not specified"}</p>
+                            </div>
+                            <div>
+                                <p className="text-gray-600 text-sm text-main font-bold">Test Date</p>
+                                <p className="text-complementary text-2xl font-['Kelly_Slab']">
+                                    {data.date ? new Date(data.date).toLocaleDateString() : "Not specified"}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* ✅ UPDATED: Analysis Results Section */}
-                <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+                    {/* Analysis Results */}
                     <div className="">
                         <h3 className="text-xl font-bold text-main mb-4">Analysis Results</h3>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Parasite Density */}
                             {result.average_parasite_density_per_1000_rbc !== undefined && (
-                                <div className="bg-white p-4 rounded shadow">
+                                <div className="p-4 rounded-xl border border-main">
                                     <h4 className="font-[Kelly_Slab] text-complementary">Parasite Density</h4>
                                     <p className="text-2xl font-bold">
                                         {parseFloat(result.average_parasite_density_per_1000_rbc).toFixed(2)}
@@ -228,7 +228,7 @@ export default function ResultPage() {
                             
                             {/* Parasitemia Percentage */}
                             {result.average_parasitemia_percent !== undefined && (
-                                <div className="bg-white p-4 rounded shadow">
+                                <div className="p-4 rounded-xl border border-main">
                                     <h4 className="font-[Kelly_Slab] text-complementary">Parasitemia</h4>
                                     <p className="text-2xl font-bold">
                                         {parseFloat(result.average_parasitemia_percent).toFixed(2)}%
@@ -241,7 +241,7 @@ export default function ResultPage() {
                         {result.average_stage_counts && Object.keys(result.average_stage_counts).length > 0 && (
                             <div className="mt-6">
                                 <h4 className="text-main text-xl font-bold">Parasite Stages</h4>
-                                <div className="bg-white p-4 rounded shadow">
+                                <div className="p-4 rounded-xl border  border-main">
                                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         {Object.entries(result.average_stage_counts).map(([stage, count]) => (
                                             <div key={stage}>
@@ -254,13 +254,39 @@ export default function ResultPage() {
                             </div>
                         )}
                     </div>
+                    {/* Action Buttons - Moved inside the main container */}
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-3 mt-8">
+    {data.ai_report && (
+        <button
+            onClick={() => setShowReport(!showReport)}
+            className="px-3 py-2 border cursor-pointer border-main text-complementary rounded-xl hover:border-complementary flex items-center justify-center gap-2 transition-colors text-sm"
+        >
+            <span>📋</span>
+            <span className="hidden sm:inline">{showReport ? 'Hide' : 'Show'} AI Report</span>
+            <span className="sm:hidden">AI Report</span>
+        </button>
+    )}
+    
+    <button 
+        className="px-3 py-2 border cursor-pointer border-main text-complementary rounded-xl hover:border-complementary flex items-center justify-center gap-2 transition-colors text-sm"
+        onClick={printReport}
+    >
+        📄 <span className="hidden sm:inline">Print Full Report</span><span className="sm:hidden">Print</span>
+    </button>
+    <button 
+        className="px-3 py-2 border bg-main text-white cursor-pointer border-main rounded-xl hover:border-complementary flex items-center justify-center gap-2 transition-colors text-sm"
+        onClick={() => navigate('/upload')}
+    >
+        ➕ <span className="hidden sm:inline">New Test</span><span className="sm:hidden">New</span>
+    </button>
+</div>
                 </div>
 
                 {/* AI Medical Report Section */}
                 {data.ai_report && showReport && (
-                    <div className="bg-white shadow-md rounded-lg p-6 mb-6 border-l-4 border-blue-500">
+                    <div className="bg-white shadow-md rounded-lg p-6 mb-6 border-l-4 border-complementary leading-loose">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-blue-700">AI Medical Analysis Report</h3>
+                            <h3 className="text-xl font-bold text-main">AI Medical Analysis Report</h3>
                             <button
                                 onClick={() => setShowReport(false)}
                                 className="text-gray-500 hover:text-gray-700"
@@ -279,42 +305,16 @@ export default function ResultPage() {
                     </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="bg-white shadow-md rounded-lg p-6">
-                    <h3 className="text-xl font-bold mb-4">Actions</h3>
-                    <div className="flex flex-wrap gap-4">
-                        {data.ai_report && (
-                            <button
-                                onClick={() => setShowReport(!showReport)}
-                                className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 flex items-center gap-2 transition-colors"
-                            >
-                                <span>📋</span>
-                                <span>{showReport ? 'Hide' : 'Show'} AI Report</span>
-                            </button>
-                        )}
-                        
-                        <button 
-                            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                            onClick={printReport}
-                        >
-                            📄 Print Full Report
-                        </button>
-                        <button 
-                            className="px-4 py-2 bg-main text-white rounded-md hover:bg-complementary"
-                            onClick={() => navigate('/upload')}
-                        >
-                            ➕ New Test
-                        </button>
-                    </div>
-                </div>
+                
             </div>
 
             {/* Ask AI Button */}
             <button
                 onClick={() => setShowChat(true)}
-                className="fixed bottom-5 right-5 md:right-15 z-50"
+                className="fixed bottom-5 right-5 md:right-10 z-50 cursor-pointer"
+                title="Ask AI about your results"
             >
-                <img src={chatIcon} alt="Chat Icon" className="w-[60px] h-[60px]" />
+                <img src={chatIcon} alt="Chat Icon" className="w-[55px] h-[55px]" />
             </button>
 
             {/* Chat Component */}

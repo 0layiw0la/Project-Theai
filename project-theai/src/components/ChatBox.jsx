@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import aiSendIcon from '../assets/ai-send.png';
+import aiBackIcon from '../assets/ai-back.png';
 
 export default function ChatBox({ taskId, isVisible, onClose }) {
     const [messages, setMessages] = useState([]);
@@ -76,66 +78,85 @@ export default function ChatBox({ taskId, isVisible, onClose }) {
 
     // Custom components for markdown styling
     const markdownComponents = {
-        h1: ({children}) => <h1 className="text-lg font-bold text-gray-800 mb-2">{children}</h1>,
-        h2: ({children}) => <h2 className="text-base font-bold text-gray-800 mb-2">{children}</h2>,
-        h3: ({children}) => <h3 className="text-sm font-bold text-gray-800 mb-1">{children}</h3>,
-        p: ({children}) => <p className="text-gray-800 mb-2">{children}</p>,
-        strong: ({children}) => <strong className="font-bold text-gray-900">{children}</strong>,
+        h1: ({children}) => <h1 className="text-lg font-bold  mb-2">{children}</h1>,
+        h2: ({children}) => <h2 className="text-base font-bold text-white mb-2">{children}</h2>,
+        h3: ({children}) => <h3 className="text-sm font-bold text-white mb-1">{children}</h3>,
+        p: ({children}) => <p className="text-white mb-2">{children}</p>,
+        strong: ({children}) => <strong className="font-bold text-white">{children}</strong>,
         code: ({children}) => <code className="bg-gray-200 px-1 rounded text-sm">{children}</code>,
-        ul: ({children}) => <ul className="list-disc list-inside mb-2 text-gray-800">{children}</ul>,
-        ol: ({children}) => <ol className="list-decimal list-inside mb-2 text-gray-800">{children}</ol>,
+        ul: ({children}) => <ul className="list-disc list-inside mb-2 text-white">{children}</ul>,
+        ol: ({children}) => <ol className="list-decimal list-inside mb-2 text-white">{children}</ol>,
         li: ({children}) => <li className="mb-1">{children}</li>
     };
 
-    if (!isVisible) return null;
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg w-full max-w-2xl h-3/4 flex flex-col">
-                {/* Header */}
-                <div className="flex justify-between items-center p-4 border-b">
-                    <h3 className="text-lg font-semibold text-main">AI Medical Assistant</h3>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl">
-                        ✕
+        <>
+            {/* Backdrop - only visible on mobile */}
+            {isVisible && (
+                <div 
+                    className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+                    onClick={onClose}
+                />
+            )}
+
+            {/* Sidebar Chat */}
+            <div className={`fixed top-0 right-0 h-full shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
+                isVisible ? 'translate-x-0' : 'translate-x-full'
+            } w-full md:w-[40%] flex flex-col`} style={{backgroundColor: '#F5EEDD'}}>
+                
+                {/* Header with Theia Icon */}
+                <div className="flex items-center p-6">
+                    <button onClick={onClose} className="mr-4">
+                        <img src={aiBackIcon} alt="Back" className="w-8 h-8" />
                     </button>
                 </div>
 
+                {/* Title Section */}
+                <div className="px-6 pb-6">
+                    <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                        Hello, I'm <span className="text-complementary">Theia</span>,
+                    </h1>
+                    <h2 className="text-2xl font-bold text-gray-800">
+                        your AI assistant.
+                    </h2>
+                </div>
+
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {messages.length === 0 ? (
-                        <div className="text-center text-gray-500 mt-8">
-                            <p>💬 Ask me about your test results!</p>
-                            <p className="text-sm mt-2">I can explain your parasite counts, severity levels, and treatment options.</p>
-                        </div>
+<div className="flex-1 overflow-y-auto px-6 space-y-4">
+    {messages.length === 0 ? (
+        <div className="text-center text-gray-500 mt-8">
+            <p>💬 Start a conversation with Theia!</p>
+            <p className="text-sm mt-2">Ask me about your test results, symptoms, or treatment options.</p>
+        </div>
+    ) : (
+        messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] px-4 py-3 rounded-lg ${
+                    msg.role === 'user' 
+                        ? 'bg-[#EAE3D0] text-complementary shadow-[_-3px_4px_0px_-2px_rgba(186,180,180,0.75)]' 
+                        : 'text-white bg-gradient-to-b from-[#077A7D] to-[#0ABEC3] shadow-[_-4px_5px_0px_-2px_rgba(186,180,180,0.75)] '
+                }`}>
+                    {msg.role === 'assistant' ? (
+                        <ReactMarkdown 
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownComponents}
+                        >
+                            {msg.content}
+                        </ReactMarkdown>
                     ) : (
-                        messages.map((msg, i) => (
-                            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-md px-4 py-2 rounded-lg ${
-                                    msg.role === 'user' 
-                                        ? 'bg-main text-white' 
-                                        : 'bg-gray-100 text-gray-800 border'
-                                }`}>
-                                    {msg.role === 'assistant' ? (
-                                        <ReactMarkdown 
-                                            remarkPlugins={[remarkGfm]}
-                                            components={markdownComponents}
-                                        >
-                                            {msg.content}
-                                        </ReactMarkdown>
-                                    ) : (
-                                        <p className="whitespace-pre-wrap">{msg.content}</p>
-                                    )}
-                                </div>
-                            </div>
-                        ))
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     )}
+                </div>
+            </div>
+        ))
+    )}
                     {loading && (
                         <div className="flex justify-start">
-                            <div className="bg-gray-100 border px-4 py-2 rounded-lg">
+                            <div className="bg-teal-500 text-white px-4 py-3 rounded-2xl">
                                 <div className="flex items-center space-x-1">
-                                    <div className="animate-bounce text-main">●</div>
-                                    <div className="animate-bounce text-main" style={{animationDelay: '0.1s'}}>●</div>
-                                    <div className="animate-bounce text-main" style={{animationDelay: '0.2s'}}>●</div>
+                                    <div className="animate-bounce text-white text-xs">●</div>
+                                    <div className="animate-bounce text-white text-xs" style={{animationDelay: '0.1s'}}>●</div>
+                                    <div className="animate-bounce text-white text-xs" style={{animationDelay: '0.2s'}}>●</div>
                                 </div>
                             </div>
                         </div>
@@ -143,33 +164,29 @@ export default function ChatBox({ taskId, isVisible, onClose }) {
                     <div ref={endRef} />
                 </div>
 
-                {/* Input */}
-                <div className="border-t p-4">
-                    <div className="flex gap-2">
-                        <textarea
+                {/* Input Section */}
+                <div className="p-6">
+                    <div className="flex items-center gap-3">
+                        <input
+                            type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyPress={handleKey}
-                            placeholder="Ask about your malaria test results..."
-                            className="flex-1 border rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-main focus:border-main"
-                            rows={2}
+                            placeholder="Type your message"
+                            className="flex-1 bg-white border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                             disabled={loading}
                         />
                         <button
                             onClick={send}
                             disabled={loading || !input.trim()}
-                            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-                                loading || !input.trim()
-                                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                    : 'bg-main text-white hover:bg-complementary'
-                            }`}
+                            className="disabled:opacity-50"
                         >
-                            Send
+                            <img src={aiSendIcon} alt="Send" className="w-10 h-10" />
                         </button>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Press Enter to send, Shift+Enter for new line</p>
+                    <p className="text-xs text-center text-gray-500 mt-3">Powered by Llama</p>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
