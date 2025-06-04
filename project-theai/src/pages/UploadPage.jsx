@@ -12,7 +12,7 @@ export default function UploadPage() {
 
     const { token, uploadCall } = useAuth(); // ✅ Add uploadCall
     const [uploading, setUploading] = useState(false);
-    // ❌ REMOVED: const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
+    // ❌ REMOVE: const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
 
     // Modal and Camera state (only for mobile)
     const [showModal, setShowModal] = useState(false);
@@ -53,9 +53,17 @@ export default function UploadPage() {
         const date = new Date().toISOString();
         formData.append("date", date);
 
+        // ✅ ADD DEBUG LOGS
+        console.log('🚀 About to upload with FormData:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`🚀 ${key}:`, value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value);
+        }
+
         try {
+            console.log('🚀 Calling uploadCall...');
             // ✅ CHANGED: Use uploadCall instead of direct fetch
             const response = await uploadCall(formData);
+            console.log('🚀 Upload response status:', response.status);
 
             if (response.status === 401) {
                 localStorage.removeItem('token');
@@ -83,6 +91,7 @@ export default function UploadPage() {
         }
     };
 
+    // ... rest of your component stays exactly the same
     const handleImageChange = (e) => {
         const validTypes = ["image/jpeg", "image/png", "image/jpg"];
         const files = e.target.files;
