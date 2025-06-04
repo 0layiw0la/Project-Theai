@@ -143,33 +143,40 @@ export function AuthProvider({ children }) {
       }
     };
     
+// Replace your uploadCall function with this:
 
-  const uploadCall = async (formData) => {
+const uploadCall = async (formData) => {
     console.log('📤 uploadCall called with formData');
     console.log('📤 FormData entries:');
     for (let [key, value] of formData.entries()) {
         console.log(`📤   ${key}:`, value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value);
     }
     
-    // ✅ CHANGED: Use proxy endpoint for submit (not /api/upload)
     const url = `${API_BASE_URL}/api/proxy?endpoint=submit`;
+    console.log('📤 Upload URL:', url);
+    
+    const fetchOptions = {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            // ✅ ADD: Manually set Content-Type for multipart
+            'Content-Type': 'multipart/form-data'
+        },
+        body: formData
+    };
+    
+    console.log('📤 Fetch options:', { method: fetchOptions.method, headers: fetchOptions.headers });
+    console.log('📤 Making fetch request...');
+    
     try {
-        const response = await fetch(url,  {
-                method: "POST",
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
+        const response = await fetch(url, fetchOptions);
         console.log('📤 Response received:', response.status, response.statusText);
-        console.log('📤 Response ok:', response.ok);
         return response;
     } catch (error) {
         console.error('📤 uploadCall error:', error);
         throw error;
     }
 };
-
   // Fixed validate token function
   const validateToken = async (tokenToValidate = null) => {
     const checkToken = tokenToValidate || token || localStorage.getItem('token');

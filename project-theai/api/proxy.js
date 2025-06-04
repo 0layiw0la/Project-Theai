@@ -19,40 +19,23 @@ export default async function handler(req, res) {
     
     const fetchOptions = {
       method: req.method,
-      headers: {}  // ✅ Start with empty headers
+      headers: {
+        // ✅ Pass through all headers from frontend
+        ...req.headers,
+        // ✅ Remove host to avoid conflicts
+        host: undefined
+      },
+      body: req.method === 'GET' ? undefined : req.body
     };
 
-    // ✅ Add authorization header if present
-    if (req.headers.authorization) {
-      fetchOptions.headers['Authorization'] = req.headers.authorization;
-    }
-
-    // ✅ Handle different content types correctly
-    if (req.method === 'POST' || req.method === 'PUT') {
-      // ✅ Check if it's a file upload (multipart/form-data)
-      if (req.headers['content-type']?.includes('multipart/form-data')) {
-        // ✅ For file uploads: pass raw body and content-type
-        fetchOptions.body = req.body;
-        fetchOptions.headers['Content-Type'] = req.headers['content-type'];
-      } else {
-        // ✅ For JSON: set JSON headers and stringify
-        fetchOptions.headers['Content-Type'] = 'application/json';
-        fetchOptions.body = JSON.stringify(req.body);
-      }
-    }
-
     console.log('🔧 Proxying to:', backendUrl);
-    console.log('🔧 Method:', req.method);
-    console.log('🔧 Content-Type:', req.headers['content-type']);
-    console.log('🔧 Body type:', typeof req.body);
+    console.log('🔧 Headers:', fetchOptions.headers);
 
     const response = await fetch(backendUrl, fetchOptions);
     const responseText = await response.text();
     
     console.log('🔧 Backend response status:', response.status);
-    console.log('🔧 Backend response:', responseText);
     
-    // Try to parse as JSON
     try {
       const data = JSON.parse(responseText);
       return res.status(response.status).json(data);
@@ -72,9 +55,9 @@ export default async function handler(req, res) {
   }
 }
 
-// ✅ CRITICAL: Add this to handle FormData properly
+// ✅ Keep bodyParser disabled for file uploads
 export const config = {
   api: {
-    bodyParser: false, // Disable body parsing for file uploads
+    bodyParser: false,
   },
 };
