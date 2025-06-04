@@ -1,5 +1,20 @@
 {
+  "functions": {
+    "api/proxy.js": {
+      "maxDuration": 30
+    },
+    "api/upload.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
