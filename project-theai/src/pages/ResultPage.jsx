@@ -8,6 +8,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 export default function ResultPage() {
+    console.log('💎 ResultPage loaded!');
+    const { token, getResult, isAuthenticated } = useAuth();
+    console.log('💎 getResult function exists:', typeof getResult); // Should log 'function'
     const { taskId } = useParams();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -15,38 +18,48 @@ export default function ResultPage() {
     const [showChat, setShowChat] = useState(false);
     const [showReport, setShowReport] = useState(false);
     const navigate = useNavigate();
-    const { token } = useAuth();
-    const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
+   // ✅ Use getResult
+    // ❌ REMOVE THIS LINE: const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
 
     useEffect(() => {
         const fetchResult = async () => {
+            console.log('💎 fetchResult called for taskId:', taskId);
+            console.log('💎 Token exists:', !!token);
+            console.log('💎 isAuthenticated:', isAuthenticated);
+            
+            if (!token || !isAuthenticated) {
+                console.error('💎 No auth, redirecting to login...');
+                navigate('/login');
+                return;
+            }
+            
             try {
                 setLoading(true);
-                const res = await fetch(`${API_BASE_URL}/result/${taskId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
                 
-                if (!res.ok) {
-                    if (res.status === 401) {
-                        navigate('/login');
-                        return;
-                    }
-                    throw new Error('Failed to fetch result');
-                }
-                
-                const json = await res.json();
+                // ✅ USE PROXY: Call getResult instead of direct fetch
+                const json = await getResult(taskId);
+                console.log('💎 Result received:', json);
                 setData(json);
+                
             } catch (err) {
+                console.error('💎 Error fetching result:', err);
+                if (err.message === 'UNAUTHORIZED') {
+                    navigate('/login');
+                    return;
+                }
                 setError(err.message);
             } finally {
                 setLoading(false);
             }
         };
         
-        fetchResult();
-    }, [taskId, token, navigate]);
+        if (taskId && isAuthenticated && token) {
+            console.log('💎 Calling fetchResult...');
+            fetchResult();
+        } else {
+            console.log('💎 Missing requirements:', { taskId: !!taskId, isAuthenticated, token: !!token });
+        }
+    }, [taskId, token, navigate, getResult, isAuthenticated]); // ✅ Add dependencies
 
     const printReport = () => {
         const printWindow = window.open('', '_blank');
@@ -254,32 +267,34 @@ export default function ResultPage() {
                             </div>
                         )}
                     </div>
-                    {/* Action Buttons - Moved inside the main container */}
+
+                    {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-3 mt-8">
-    {data.ai_report && (
-        <button
-            onClick={() => setShowReport(!showReport)}
-            className="px-3 py-2 border cursor-pointer border-main text-complementary rounded-xl hover:border-complementary flex items-center justify-center gap-2 transition-colors text-sm"
-        >
-            <span>📋</span>
-            <span className="hidden sm:inline">{showReport ? 'Hide' : 'Show'} AI Report</span>
-            <span className="sm:hidden">AI Report</span>
-        </button>
-    )}
-    
-    <button 
-        className="px-3 py-2 border cursor-pointer border-main text-complementary rounded-xl hover:border-complementary flex items-center justify-center gap-2 transition-colors text-sm"
-        onClick={printReport}
-    >
-        📄 <span className="hidden sm:inline">Print Full Report</span><span className="sm:hidden">Print</span>
-    </button>
-    <button 
-        className="px-3 py-2 border bg-main text-white cursor-pointer border-main rounded-xl hover:border-complementary flex items-center justify-center gap-2 transition-colors text-sm"
-        onClick={() => navigate('/upload')}
-    >
-        ➕ <span className="hidden sm:inline">New Test</span><span className="sm:hidden">New</span>
-    </button>
-</div>
+                        {data.ai_report && (
+                            <button
+                                onClick={() => setShowReport(!showReport)}
+                                className="px-3 py-2 border cursor-pointer border-main text-complementary rounded-xl hover:border-complementary flex items-center justify-center gap-2 transition-colors text-sm"
+                            >
+                                <span>📋</span>
+                                <span className="hidden sm:inline">{showReport ? 'Hide' : 'Show'} AI Report</span>
+                                <span className="sm:hidden">AI Report</span>
+                            </button>
+                        )}
+                        
+                        <button 
+                            className="px-3 py-2 border cursor-pointer border-main text-complementary rounded-xl hover:border-complementary flex items-center justify-center gap-2 transition-colors text-sm"
+                            onClick={printReport}
+                        >
+                            📄 <span className="hidden sm:inline">Print Full Report</span><span className="sm:hidden">Print</span>
+                        </button>
+                        
+                        <button 
+                            className="px-3 py-2 border bg-main text-white cursor-pointer border-main rounded-xl hover:border-complementary flex items-center justify-center gap-2 transition-colors text-sm"
+                            onClick={() => navigate('/form')}
+                        >
+                            ➕ <span className="hidden sm:inline">New Test</span><span className="sm:hidden">New</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* AI Medical Report Section */}
@@ -304,8 +319,6 @@ export default function ResultPage() {
                         </div>
                     </div>
                 )}
-
-                
             </div>
 
             {/* Ask AI Button */}

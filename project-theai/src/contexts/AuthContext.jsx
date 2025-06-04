@@ -37,6 +37,112 @@ export function AuthProvider({ children }) {
     return fetch(url, fetchOptions);
   };
 
+
+  const getTasks = async () => {
+    console.log('🔥 getTasks called!');
+    console.log('🔥 Token exists:', !!token);
+    console.log('🔥 Token value:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+    console.log('🔥 API_BASE_URL:', API_BASE_URL);
+    
+    if (!token) {
+      console.error('🔥 No token available for getTasks');
+      throw new Error('No authentication token');
+    }
+    
+    const url = `${API_BASE_URL}/api/proxy?endpoint=tasks`;
+    console.log('🔥 Full URL:', url);
+    
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    };
+    
+    console.log('🔥 Fetch options:', fetchOptions);
+    console.log('🔥 Making fetch request...');
+    
+    try {
+      const response = await fetch(url, fetchOptions);
+      console.log('🔥 Response received:', response.status, response.statusText);
+      console.log('🔥 Response ok:', response.ok);
+      
+      if (!response.ok) {
+        console.error('🔥 Response not ok:', response.status);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('🔥 Tasks data:', data);
+      return data;
+      
+    } catch (error) {
+      console.error('🔥 getTasks error:', error);
+      console.error('🔥 Error type:', error.constructor.name);
+      console.error('🔥 Error message:', error.message);
+      throw error;
+    }
+  };
+
+  // Replace your incomplete getResult function with this complete one:
+
+    // In AuthContext.jsx - complete the getResult function:
+  const getResult = async (taskId) => {
+      console.log('💎 getResult called for taskId:', taskId);
+      console.log('💎 Token exists:', !!token);
+      console.log('💎 Token value:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+      console.log('💎 API_BASE_URL:', API_BASE_URL);
+      
+      if (!token) {
+        console.error('💎 No token available for getResult');
+        throw new Error('No authentication token');
+      }
+      
+      if (!taskId) {
+        console.error('💎 No taskId provided');
+        throw new Error('No task ID provided');
+      }
+      
+      const url = `${API_BASE_URL}/api/proxy?endpoint=result/${taskId}`;
+      console.log('💎 Full URL:', url);
+      
+      const fetchOptions = {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      };
+      
+      console.log('💎 Fetch options:', fetchOptions);
+      console.log('💎 Making fetch request...');
+      
+      try {
+        const response = await fetch(url, fetchOptions);
+        console.log('💎 Response received:', response.status, response.statusText);
+        console.log('💎 Response ok:', response.ok);
+        
+        if (!response.ok) {
+          console.error('💎 Response not ok:', response.status);
+          if (response.status === 401) {
+            throw new Error('UNAUTHORIZED');
+          }
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('💎 Result data:', data);
+        return data;
+        
+      } catch (error) {
+        console.error('💎 getResult error:', error);
+        console.error('💎 Error type:', error.constructor.name);
+        console.error('💎 Error message:', error.message);
+        throw error;
+      }
+    };
+    
   // File upload function (for FormData)
   const uploadCall = async (formData) => {
     const url = `${API_BASE_URL}/api/upload`;
@@ -182,7 +288,9 @@ export function AuthProvider({ children }) {
     logout,
     validateToken,
     apiCall,
-    uploadCall
+    uploadCall,
+    getTasks,  // ✅ Add this
+    getResult  // ✅ Add this
   };
 
   return (

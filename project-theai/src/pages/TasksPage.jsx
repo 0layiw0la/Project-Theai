@@ -4,25 +4,23 @@ import { useAuth } from "../contexts/AuthContext";
 import Logo from "../components/Logo";
 
 export default function TasksPage() {
+    console.log('🚀 TasksPage component loaded!');
+    
     const [tasks, setTasks] = useState({});
     const [loading, setLoading] = useState(true);
     const [isPolling, setIsPolling] = useState(false);
     const [retryingTasks, setRetryingTasks] = useState(new Set());
     const [deletingTasks, setDeletingTasks] = useState(new Set());
     const navigate = useNavigate();
-    const { token, apiCall } = useAuth(); // ✅ Get apiCall from context
+    const { token, apiCall, getTasks, isAuthenticated } = useAuth(); // ✅ Get getTasks
 
     const fetchTasks = async () => {
+        console.log('🚀 fetchTasks called');
         setLoading(true);
         try {
-            console.log('ji')
-            const res = await apiCall('tasks'); // ✅ Use proxy
-            
-            if (!res.ok) {
-                throw new Error('Failed to fetch tasks');
-            }
-            
-            const data = await res.json();
+            // ✅ Use the special getTasks function
+            const data = await getTasks();
+            console.log('🚀 Tasks received in component:', data);
             setTasks(data);
             
             const hasProcessing = Object.values(data).some(task => 
@@ -31,13 +29,13 @@ export default function TasksPage() {
             setIsPolling(hasProcessing);
             
         } catch (error) {
-            console.error("Error fetching tasks:", error);
+            console.error("🚀 Error in fetchTasks:", error);
         } finally {
             setLoading(false);
         }
     };
 
-    // ✅ Retry function using proxy
+    // Keep other functions the same for now...
     const retryTask = async (taskId, event) => {
         event.stopPropagation();
         setRetryingTasks(prev => new Set([...prev, taskId]));
@@ -63,7 +61,6 @@ export default function TasksPage() {
         }
     };
 
-    // ✅ Delete function using proxy
     const deleteTask = async (taskId, event) => {
         event.stopPropagation();
         
@@ -102,9 +99,19 @@ export default function TasksPage() {
     };
 
     useEffect(() => {
-        fetchTasks();
-    }, [token, navigate]);
+        console.log('🚀 TasksPage useEffect triggered');
+        console.log('🚀 isAuthenticated:', isAuthenticated);
+        console.log('🚀 token exists:', !!token);
+        
+        if (isAuthenticated && token) {
+            console.log('🚀 Calling fetchTasks...');
+            fetchTasks();
+        } else {
+            console.log('🚀 Not authenticated, waiting...');
+        }
+    }, [isAuthenticated, token]);
 
+    // Rest of your component stays the same...
     useEffect(() => {
         if (!isPolling) return;
 
@@ -115,10 +122,6 @@ export default function TasksPage() {
 
         return () => clearInterval(interval);
     }, [isPolling]);
-
-    const refreshTasks = async () => {
-        await fetchTasks();
-    };
 
     return (
         <>

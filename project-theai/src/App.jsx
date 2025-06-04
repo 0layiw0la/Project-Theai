@@ -4,6 +4,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider } from './contexts/AuthContext';
 
 function App() {
+  console.log('🚨 Current route:', window.location.pathname);
   return (
     <ErrorBoundary>
     <AuthProvider>

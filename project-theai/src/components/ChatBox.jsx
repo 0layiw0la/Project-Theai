@@ -10,8 +10,7 @@ export default function ChatBox({ taskId, isVisible, onClose }) {
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const endRef = useRef(null);
-    const { token } = useAuth();
-    const API_URL = import.meta.env.VITE_APP_API_URL;
+    const { token, apiCall } = useAuth(); // ✅ Use apiCall instead of direct fetch
 
     useEffect(() => {
         if (isVisible && taskId) loadHistory();
@@ -23,9 +22,8 @@ export default function ChatBox({ taskId, isVisible, onClose }) {
 
     const loadHistory = async () => {
         try {
-            const res = await fetch(`${API_URL}/chat/${taskId}/history`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            // ✅ Use apiCall through proxy
+            const res = await apiCall(`chat/${taskId}/history`);
             if (res.ok) {
                 const data = await res.json();
                 setMessages(data.messages || []);
@@ -36,120 +34,100 @@ export default function ChatBox({ taskId, isVisible, onClose }) {
     };
 
     const send = async () => {
-        if (!input.trim() || loading) return;
+        const message = input.trim();
+        if (!message || loading) return;
 
-        const userMsg = input.trim();
         setInput('');
+        setMessages(prev => [...prev, { role: 'user', content: message }]);
         setLoading(true);
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
 
         try {
-            const res = await fetch(`${API_URL}/chat/${taskId}`, {
+            // ✅ Use apiCall through proxy
+            const res = await apiCall(`chat/${taskId}`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ message: userMsg })
+                body: { message }
             });
 
             if (res.ok) {
                 const data = await res.json();
                 setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
             } else {
-                throw new Error('Send failed');
+                setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
             }
         } catch (error) {
-            setMessages(prev => [...prev, { 
-                role: 'assistant', 
-                content: 'Error occurred. Please try again.' 
-            }]);
+            console.error('Send failed:', error);
+            setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I encountered an error. Please try again.' }]);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleKey = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            send();
-        }
+    const markdownComponents = {
+        h1: ({ children }) => <h1 className="text-lg font-bold text-teal-700 mb-2">{children}</h1>,
+        h2: ({ children }) => <h2 className="text-md font-bold text-teal-600 mb-1">{children}</h2>,
+        h3: ({ children }) => <h3 className="text-sm font-bold text-teal-600 mb-1">{children}</h3>,
+        p: ({ children }) => <p className="mb-2 leading-relaxed">{children}</p>,
+        ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal ml-4 mb-2">{children}</ol>,
+        li: ({ children }) => <li className="mb-1">{children}</li>,
+        strong: ({ children }) => <strong className="font-semibold text-teal-800">{children}</strong>,
+        em: ({ children }) => <em className="italic text-teal-700">{children}</em>,
+        code: ({ children }) => <code className="bg-teal-50 px-1 py-0.5 rounded text-sm font-mono">{children}</code>,
+        pre: ({ children }) => <pre className="bg-teal-50 p-2 rounded text-sm font-mono overflow-x-auto mb-2">{children}</pre>,
     };
 
-    // Custom components for markdown styling
-    const markdownComponents = {
-        h1: ({children}) => <h1 className="text-lg font-bold  mb-2">{children}</h1>,
-        h2: ({children}) => <h2 className="text-base font-bold text-white mb-2">{children}</h2>,
-        h3: ({children}) => <h3 className="text-sm font-bold text-white mb-1">{children}</h3>,
-        p: ({children}) => <p className="text-white mb-2">{children}</p>,
-        strong: ({children}) => <strong className="font-bold text-white">{children}</strong>,
-        code: ({children}) => <code className="bg-gray-200 px-1 rounded text-sm">{children}</code>,
-        ul: ({children}) => <ul className="list-disc list-inside mb-2 text-white">{children}</ul>,
-        ol: ({children}) => <ol className="list-decimal list-inside mb-2 text-white">{children}</ol>,
-        li: ({children}) => <li className="mb-1">{children}</li>
-    };
+    if (!isVisible) return null;
 
     return (
-        <>
-            {/* Backdrop - only visible on mobile */}
-            {isVisible && (
-                <div 
-                    className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-                    onClick={onClose}
-                />
-            )}
-
-            {/* Sidebar Chat */}
-            <div className={`fixed top-0 right-0 h-full shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
-                isVisible ? 'translate-x-0' : 'translate-x-full'
-            } w-full md:w-[40%] flex flex-col`} style={{backgroundColor: '#F5EEDD'}}>
-                
-                {/* Header with Theia Icon */}
-                <div className="flex items-center p-6">
-                    <button onClick={onClose} className="mr-4">
-                        <img src={aiBackIcon} alt="Back" className="w-8 h-8" />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between p-4 border-b bg-teal-500 text-white rounded-t-xl">
+                    <div className="flex items-center space-x-3">
+                        <img src={aiBackIcon} alt="AI" className="w-8 h-8" />
+                        <h3 className="text-lg font-semibold">Ask AI about your results</h3>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="text-white hover:bg-teal-600 rounded-full p-1 transition-colors"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
                     </button>
                 </div>
 
-                {/* Title Section */}
-                <div className="px-6 pb-6">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">
-                        Hello, I'm <span className="text-complementary">Theia</span>,
-                    </h1>
-                    <h2 className="text-2xl font-bold text-gray-800">
-                        your AI assistant.
-                    </h2>
-                </div>
-
                 {/* Messages */}
-<div className="flex-1 overflow-y-auto px-6 space-y-4">
-    {messages.length === 0 ? (
-        <div className="text-center text-gray-500 mt-8">
-            <p>💬 Start a conversation with Theia!</p>
-            <p className="text-sm mt-2">Ask me about your test results, symptoms, or treatment options.</p>
-        </div>
-    ) : (
-        messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] px-4 py-3 rounded-lg ${
-                    msg.role === 'user' 
-                        ? 'bg-[#EAE3D0] text-complementary shadow-[_-3px_4px_0px_-2px_rgba(186,180,180,0.75)]' 
-                        : 'text-white bg-gradient-to-b from-[#077A7D] to-[#0ABEC3] shadow-[_-4px_5px_0px_-2px_rgba(186,180,180,0.75)] '
-                }`}>
-                    {msg.role === 'assistant' ? (
-                        <ReactMarkdown 
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                        >
-                            {msg.content}
-                        </ReactMarkdown>
-                    ) : (
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {messages.length === 0 && (
+                        <div className="text-center text-gray-500 mt-8">
+                            <img src={aiBackIcon} alt="AI" className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                            <p>Ask me anything about your malaria test results!</p>
+                            <p className="text-sm mt-2">I can help explain the findings, discuss treatment options, or answer any questions you might have.</p>
+                        </div>
                     )}
-                </div>
-            </div>
-        ))
-    )}
+                    
+                    {messages.map((msg, i) => (
+                        <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[80%] px-4 py-3 rounded-2xl ${
+                                msg.role === 'user' 
+                                    ? 'bg-blue-500 text-white' 
+                                    : 'bg-teal-50 text-gray-800 border border-teal-200'
+                            }`}>
+                                {msg.role === 'assistant' && msg.content.includes('#') ? (
+                                    <ReactMarkdown 
+                                        remarkPlugins={[remarkGfm]}
+                                        components={markdownComponents}
+                                    >
+                                        {msg.content}
+                                    </ReactMarkdown>
+                                ) : (
+                                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                    
                     {loading && (
                         <div className="flex justify-start">
                             <div className="bg-teal-500 text-white px-4 py-3 rounded-2xl">
@@ -165,28 +143,30 @@ export default function ChatBox({ taskId, isVisible, onClose }) {
                 </div>
 
                 {/* Input Section */}
-                <div className="p-6">
-                    <div className="flex items-center gap-3">
+                <div className="border-t p-4">
+                    <div className="flex space-x-2">
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            onKeyPress={handleKey}
-                            placeholder="Type your message"
-                            className="flex-1 bg-white border border-gray-300 rounded-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && send()}
+                            placeholder="Ask about your results..."
+                            className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                             disabled={loading}
                         />
                         <button
                             onClick={send}
                             disabled={loading || !input.trim()}
-                            className="disabled:opacity-50"
+                            className="bg-teal-500 text-white rounded-full p-2 hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                            <img src={aiSendIcon} alt="Send" className="w-10 h-10" />
+                            <img src={aiSendIcon} alt="Send" className="w-6 h-6" />
                         </button>
                     </div>
-                    <p className="text-xs text-center text-gray-500 mt-3">Powered by Llama</p>
+                    <p className="text-xs text-gray-500 mt-2 text-center">
+                        This AI assistant provides general information only. Always consult your healthcare provider for medical advice.
+                    </p>
                 </div>
             </div>
-        </>
+        </div>
     );
 }
