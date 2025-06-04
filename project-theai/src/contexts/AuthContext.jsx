@@ -153,23 +153,14 @@ export function AuthProvider({ children }) {
     
     // ✅ CHANGED: Use proxy endpoint for submit (not /api/upload)
     const url = `${API_BASE_URL}/api/proxy?endpoint=submit`;
-    console.log('📤 Upload URL:', url);
-    const fetchOptions = {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`
-        },
-        body: formData
-    };
-    
-    console.log('📤 Fetch options (without body):', {
-        method: fetchOptions.method,
-        headers: fetchOptions.headers
-    });
-    console.log('📤 Making fetch request...');
-    
     try {
-        const response = await fetch(url, fetchOptions);
+        const response = await fetch(url,  {
+                method: "POST",
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
         console.log('📤 Response received:', response.status, response.statusText);
         console.log('📤 Response ok:', response.ok);
         return response;
