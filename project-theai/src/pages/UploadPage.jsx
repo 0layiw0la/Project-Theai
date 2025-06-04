@@ -72,12 +72,31 @@ export default function UploadPage() {
                 return;
             }
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                console.error("Upload failed:", errorData);
-                setImgError("Upload failed. Please try again.");
-                return;
+            // Replace the error handling section (around line 70):
+
+        if (!response.ok) {
+            console.log('🚨 Response status:', response.status);
+            console.log('🚨 Response headers:', Object.fromEntries(response.headers.entries()));
+            
+            const errorText = await response.text();
+            console.log('🚨 Raw error response:', errorText);
+            
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+                console.log('🚨 Parsed error data:', errorData);
+            } catch (parseError) {
+                console.log('🚨 Could not parse error as JSON');
+                errorData = { error: errorText };
             }
+            
+            console.error("Upload failed:", errorData);
+            
+            // Show detailed error message
+            const errorMessage = errorData.detail || errorData.error || errorData.message || 'Unknown error';
+            setImgError(`Upload failed: ${errorMessage}`);
+            return;
+        }
 
             const data = await response.json();
             console.log("Upload succeeded, task_id:", data.task_id);
