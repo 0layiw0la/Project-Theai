@@ -16,14 +16,14 @@ export default async function handler(req, res) {
 
   try {
     const backendUrl = `http://34.45.203.244:8000/${endpoint}`;
-    console.log('🔧 Proxying to:', backendUrl);
-    console.log('🔧 Method:', req.method);
-    console.log('🔧 Content-Type:', req.headers['content-type']);
+    
+    
+    
 
     // ✅ Handle FormData uploads differently
     if (req.method === 'POST' && req.headers['content-type']?.includes('multipart/form-data')) {
       
-      console.log('🔧 Handling multipart FormData upload');
+      
       
       // ✅ For FormData: Forward the raw request stream
       const response = await fetch(backendUrl, {
@@ -40,8 +40,8 @@ export default async function handler(req, res) {
       });
 
       const responseText = await response.text();
-      console.log('🔧 Backend response status:', response.status);
-      console.log('🔧 Backend response preview:', responseText.substring(0, 200));
+      
+      
       
       try {
         const data = JSON.parse(responseText);

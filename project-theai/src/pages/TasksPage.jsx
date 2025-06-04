@@ -4,7 +4,7 @@ import { useAuth } from "../contexts/AuthContext";
 import Logo from "../components/Logo";
 
 export default function TasksPage() {
-    console.log('🚀 TasksPage component loaded!');
+    
     
     const [tasks, setTasks] = useState({});
     const [loading, setLoading] = useState(true);
@@ -15,12 +15,12 @@ export default function TasksPage() {
     const { token, apiCall, getTasks, isAuthenticated } = useAuth(); // ✅ Get getTasks
 
     const fetchTasks = async () => {
-        console.log('🚀 fetchTasks called');
+        
         setLoading(true);
         try {
             // ✅ Use the special getTasks function
             const data = await getTasks();
-            console.log('🚀 Tasks received in component:', data);
+            
             setTasks(data);
             
             const hasProcessing = Object.values(data).some(task => 
@@ -99,15 +99,15 @@ export default function TasksPage() {
     };
 
     useEffect(() => {
-        console.log('🚀 TasksPage useEffect triggered');
-        console.log('🚀 isAuthenticated:', isAuthenticated);
-        console.log('🚀 token exists:', !!token);
+        
+        
+        
         
         if (isAuthenticated && token) {
-            console.log('🚀 Calling fetchTasks...');
+            
             fetchTasks();
         } else {
-            console.log('🚀 Not authenticated, waiting...');
+            
         }
     }, [isAuthenticated, token]);
 
@@ -116,7 +116,7 @@ export default function TasksPage() {
         if (!isPolling) return;
 
         const interval = setInterval(() => {
-            console.log("Smart polling: checking task updates...");
+            
             fetchTasks();
         }, 240000);
 

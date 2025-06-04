@@ -8,9 +8,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 export default function ResultPage() {
-    console.log('💎 ResultPage loaded!');
+    
     const { token, getResult, isAuthenticated } = useAuth();
-    console.log('💎 getResult function exists:', typeof getResult); // Should log 'function'
+    
     const { taskId } = useParams();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -23,9 +23,9 @@ export default function ResultPage() {
 
     useEffect(() => {
         const fetchResult = async () => {
-            console.log('💎 fetchResult called for taskId:', taskId);
-            console.log('💎 Token exists:', !!token);
-            console.log('💎 isAuthenticated:', isAuthenticated);
+            
+            
+            
             
             if (!token || !isAuthenticated) {
                 console.error('💎 No auth, redirecting to login...');
@@ -38,7 +38,7 @@ export default function ResultPage() {
                 
                 // ✅ USE PROXY: Call getResult instead of direct fetch
                 const json = await getResult(taskId);
-                console.log('💎 Result received:', json);
+                
                 setData(json);
                 
             } catch (err) {
@@ -54,10 +54,10 @@ export default function ResultPage() {
         };
         
         if (taskId && isAuthenticated && token) {
-            console.log('💎 Calling fetchResult...');
+            
             fetchResult();
         } else {
-            console.log('💎 Missing requirements:', { taskId: !!taskId, isAuthenticated, token: !!token });
+            
         }
     }, [taskId, token, navigate, getResult, isAuthenticated]); // ✅ Add dependencies
 
