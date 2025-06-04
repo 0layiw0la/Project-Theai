@@ -154,12 +154,10 @@ export function AuthProvider({ children }) {
     // ✅ CHANGED: Use proxy endpoint for submit (not /api/upload)
     const url = `${API_BASE_URL}/api/proxy?endpoint=submit`;
     console.log('📤 Upload URL:', url);
-    
     const fetchOptions = {
         method: 'POST',
         headers: {
-            // ✅ IMPORTANT: Don't set Content-Type for FormData - let browser handle it
-            ...(token && { 'Authorization': `Bearer ${token}` })
+            'Authorization': `Bearer ${token}`
         },
         body: formData
     };
