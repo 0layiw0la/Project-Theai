@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
-// Use your own Vercel URL as the API base
 const API_BASE_URL = window.location.origin;
 console.log('API_BASE_URL:', API_BASE_URL);
 
@@ -18,14 +17,15 @@ export function AuthProvider({ children }) {
   
   // Universal API call function (for JSON data)
   const apiCall = async (endpoint, options = {}) => {
+    console.log(token);
     const url = `${API_BASE_URL}/api/proxy?endpoint=${endpoint}`;
-    
+    console.log(token);
     const fetchOptions = {
       method: options.method || 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers
+        ...options.headers, // ✅ Put custom headers LAST to override defaults
+        ...(token && !options.headers?.Authorization && { 'Authorization': `Bearer ${token}` })
       }
     };
 
@@ -33,6 +33,7 @@ export function AuthProvider({ children }) {
       fetchOptions.body = JSON.stringify(options.body);
     }
 
+    console.log('🔍 API Call:', { endpoint, url, headers: fetchOptions.headers });
     return fetch(url, fetchOptions);
   };
 
@@ -44,13 +45,12 @@ export function AuthProvider({ children }) {
       method: 'POST',
       headers: {
         ...(token && { 'Authorization': `Bearer ${token}` })
-        // Don't set Content-Type for FormData - browser sets multipart boundary
       },
       body: formData
     });
   };
   
-  // Validate token function
+  // Fixed validate token function
   const validateToken = async (tokenToValidate = null) => {
     const checkToken = tokenToValidate || token || localStorage.getItem('token');
     
@@ -61,12 +61,23 @@ export function AuthProvider({ children }) {
     }
 
     try {
-      const response = await apiCall('validate-token', {
-        headers: { 'Authorization': `Bearer ${checkToken}` }
+      console.log('🔍 Validating token:', checkToken.substring(0, 20) + '...');
+      
+      // ✅ Direct fetch call to avoid circular dependency
+      const url = `${API_BASE_URL}/api/proxy?endpoint=validate-token`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${checkToken}`
+        }
       });
+
+      console.log('🔍 Token validation response:', response.status);
 
       if (response.ok) {
         const userData = await response.json();
+        console.log('🔍 User data:', userData);
         setCurrentUser(userData);
         setToken(checkToken);
         setIsAuthenticated(true);
@@ -74,6 +85,7 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return true;
       } else {
+        console.log('🔍 Token validation failed');
         localStorage.removeItem('token');
         setToken(null);
         setCurrentUser(null);
@@ -82,7 +94,7 @@ export function AuthProvider({ children }) {
         return false;
       }
     } catch (error) {
-      console.error('Token validation error:', error);
+      console.error('🔍 Token validation error:', error);
       localStorage.removeItem('token');
       setToken(null);
       setCurrentUser(null);
@@ -98,11 +110,15 @@ export function AuthProvider({ children }) {
   
   // Login function
   const login = async (username, password) => {
+    console.log('🔍 Login attempt:', { username });
+    
     try {
       const response = await apiCall('login', {
         method: 'POST',
         body: { username, password }
       });
+      
+      console.log('🔍 Login response status:', response.status);
       
       if (response.status === 401) {
         return false;
@@ -110,6 +126,7 @@ export function AuthProvider({ children }) {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 Login data:', data);
         const newToken = data.access_token;
         
         const isValid = await validateToken(newToken);
@@ -118,7 +135,7 @@ export function AuthProvider({ children }) {
       
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('🔍 Login error:', error);
       return false;
     }
   };
@@ -164,8 +181,8 @@ export function AuthProvider({ children }) {
     register,
     logout,
     validateToken,
-    apiCall,    // For JSON API calls
-    uploadCall  // For file uploads
+    apiCall,
+    uploadCall
   };
 
   return (

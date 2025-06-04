@@ -10,17 +10,13 @@ export default function TasksPage() {
     const [retryingTasks, setRetryingTasks] = useState(new Set());
     const [deletingTasks, setDeletingTasks] = useState(new Set());
     const navigate = useNavigate();
-    const { token } = useAuth();
-    const API_BASE_URL = import.meta.env.VITE_APP_API_URL || 'http://127.0.0.1:8000';
+    const { token, apiCall } = useAuth(); // ✅ Get apiCall from context
 
     const fetchTasks = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE_URL}/tasks`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            console.log('ji')
+            const res = await apiCall('tasks'); // ✅ Use proxy
             
             if (!res.ok) {
                 throw new Error('Failed to fetch tasks');
@@ -41,15 +37,14 @@ export default function TasksPage() {
         }
     };
 
-    // Retry function
+    // ✅ Retry function using proxy
     const retryTask = async (taskId, event) => {
         event.stopPropagation();
         setRetryingTasks(prev => new Set([...prev, taskId]));
         
         try {
-            const response = await fetch(`${API_BASE_URL}/retry/${taskId}`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await apiCall(`retry/${taskId}`, {
+                method: 'POST'
             });
             
             if (response.ok) {
@@ -68,11 +63,10 @@ export default function TasksPage() {
         }
     };
 
-    // Delete function
+    // ✅ Delete function using proxy
     const deleteTask = async (taskId, event) => {
         event.stopPropagation();
         
-        // Confirm deletion
         if (!confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
             return;
         }
@@ -80,13 +74,11 @@ export default function TasksPage() {
         setDeletingTasks(prev => new Set([...prev, taskId]));
         
         try {
-            const response = await fetch(`${API_BASE_URL}/task/${taskId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await apiCall(`task/${taskId}`, {
+                method: 'DELETE'
             });
             
             if (response.ok) {
-                // Remove task from local state immediately
                 setTasks(prev => {
                     const newTasks = { ...prev };
                     delete newTasks[taskId];
@@ -167,7 +159,6 @@ export default function TasksPage() {
                                     if (task.status === "SUCCESS") navigate(`/result/${id}`);
                                 }}
                             >
-                                {/* Delete button */}
                                 <button
                                     onClick={(e) => deleteTask(id, e)}
                                     disabled={deletingTasks.has(id)}
@@ -181,7 +172,6 @@ export default function TasksPage() {
                                     {deletingTasks.has(id) ? "..." : "×"}
                                 </button>
 
-                                {/* Hidden task ID */}
                                 <div className="hidden">{id}</div>
                                 
                                 <p className="text-lg font-semibold pr-8">
@@ -201,7 +191,6 @@ export default function TasksPage() {
                                             <div className="animate-spin mr-1 w-4 h-4 border-2 border-yellow-600 border-t-transparent rounded-full"></div>
                                         )}
                                         {task.status}
-                                        {/* Retry option for failed tasks */}
                                         {task.status === "FAILED" && (
                                             <span 
                                                 className={`ml-2 text-xs underline cursor-pointer ${
