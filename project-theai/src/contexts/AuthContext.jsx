@@ -146,6 +146,8 @@ export function AuthProvider({ children }) {
 // Replace your uploadCall function with this:
     // Replace your uploadCall function with this:
 
+// Replace uploadCall function:
+
 const uploadCall = async (formData) => {
     console.log('📤 uploadCall called with formData');
     console.log('📤 FormData entries:');
@@ -159,7 +161,7 @@ const uploadCall = async (formData) => {
     const fetchOptions = {
         method: 'POST',
         headers: {
-            // ✅ ONLY Authorization header - let browser set Content-Type automatically
+            // ✅ ONLY Authorization - browser sets Content-Type automatically with boundary
             'Authorization': `Bearer ${token}`
             // ❌ REMOVE: 'Content-Type': 'multipart/form-data'
         },
