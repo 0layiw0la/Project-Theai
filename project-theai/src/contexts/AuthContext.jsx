@@ -144,6 +144,7 @@ export function AuthProvider({ children }) {
     };
     
 // Replace your uploadCall function with this:
+    // Replace your uploadCall function with this:
 
 const uploadCall = async (formData) => {
     console.log('📤 uploadCall called with formData');
@@ -158,9 +159,9 @@ const uploadCall = async (formData) => {
     const fetchOptions = {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${token}`,
-            // ✅ ADD: Manually set Content-Type for multipart
-            'Content-Type': 'multipart/form-data'
+            // ✅ ONLY Authorization header - let browser set Content-Type automatically
+            'Authorization': `Bearer ${token}`
+            // ❌ REMOVE: 'Content-Type': 'multipart/form-data'
         },
         body: formData
     };
@@ -177,6 +178,7 @@ const uploadCall = async (formData) => {
         throw error;
     }
 };
+
   // Fixed validate token function
   const validateToken = async (tokenToValidate = null) => {
     const checkToken = tokenToValidate || token || localStorage.getItem('token');
