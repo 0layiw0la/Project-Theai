@@ -54,16 +54,16 @@ export default function UploadPage() {
         formData.append("date", date);
 
         // ✅ ADD DEBUG LOGS
-        console.log('🚀 About to upload with FormData:');
+        
         for (let [key, value] of formData.entries()) {
-            console.log(`🚀 ${key}:`, value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value);
+            
         }
 
         try {
-            console.log('🚀 Calling uploadCall...');
+            
             // ✅ CHANGED: Use uploadCall instead of direct fetch
             const response = await uploadCall(formData);
-            console.log('🚀 Upload response status:', response.status);
+            
 
             if (response.status === 401) {
                 localStorage.removeItem('token');
@@ -75,18 +75,18 @@ export default function UploadPage() {
             // Replace the error handling section (around line 70):
 
         if (!response.ok) {
-            console.log('🚨 Response status:', response.status);
-            console.log('🚨 Response headers:', Object.fromEntries(response.headers.entries()));
+            
+            
             
             const errorText = await response.text();
-            console.log('🚨 Raw error response:', errorText);
+            
             
             let errorData;
             try {
                 errorData = JSON.parse(errorText);
-                console.log('🚨 Parsed error data:', errorData);
+                
             } catch (parseError) {
-                console.log('🚨 Could not parse error as JSON');
+                
                 errorData = { error: errorText };
             }
             
@@ -99,7 +99,7 @@ export default function UploadPage() {
         }
 
             const data = await response.json();
-            console.log("Upload succeeded, task_id:", data.task_id);
+            
 
             navigate(`/tasks`);
         } catch (error) {

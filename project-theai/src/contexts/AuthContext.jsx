@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 const AuthContext = createContext();
 
 const API_BASE_URL = window.location.origin;
-console.log('API_BASE_URL:', API_BASE_URL);
+
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -17,9 +17,9 @@ export function AuthProvider({ children }) {
   
   // Universal API call function (for JSON data)
   const apiCall = async (endpoint, options = {}) => {
-    console.log(token);
+    
     const url = `${API_BASE_URL}/api/proxy?endpoint=${endpoint}`;
-    console.log(token);
+    
     const fetchOptions = {
       method: options.method || 'GET',
       headers: {
@@ -33,16 +33,16 @@ export function AuthProvider({ children }) {
       fetchOptions.body = JSON.stringify(options.body);
     }
 
-    console.log('🔍 API Call:', { endpoint, url, headers: fetchOptions.headers });
+    
     return fetch(url, fetchOptions);
   };
 
 
   const getTasks = async () => {
-    console.log('🔥 getTasks called!');
-    console.log('🔥 Token exists:', !!token);
-    console.log('🔥 Token value:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
-    console.log('🔥 API_BASE_URL:', API_BASE_URL);
+    
+    
+    
+    
     
     if (!token) {
       console.error('🔥 No token available for getTasks');
@@ -50,7 +50,7 @@ export function AuthProvider({ children }) {
     }
     
     const url = `${API_BASE_URL}/api/proxy?endpoint=tasks`;
-    console.log('🔥 Full URL:', url);
+    
     
     const fetchOptions = {
       method: 'GET',
@@ -60,13 +60,13 @@ export function AuthProvider({ children }) {
       }
     };
     
-    console.log('🔥 Fetch options:', fetchOptions);
-    console.log('🔥 Making fetch request...');
+    
+    
     
     try {
       const response = await fetch(url, fetchOptions);
-      console.log('🔥 Response received:', response.status, response.statusText);
-      console.log('🔥 Response ok:', response.ok);
+      
+      
       
       if (!response.ok) {
         console.error('🔥 Response not ok:', response.status);
@@ -74,7 +74,7 @@ export function AuthProvider({ children }) {
       }
       
       const data = await response.json();
-      console.log('🔥 Tasks data:', data);
+      
       return data;
       
     } catch (error) {
@@ -89,10 +89,10 @@ export function AuthProvider({ children }) {
 
     // In AuthContext.jsx - complete the getResult function:
   const getResult = async (taskId) => {
-      console.log('💎 getResult called for taskId:', taskId);
-      console.log('💎 Token exists:', !!token);
-      console.log('💎 Token value:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
-      console.log('💎 API_BASE_URL:', API_BASE_URL);
+      
+      
+      
+      
       
       if (!token) {
         console.error('💎 No token available for getResult');
@@ -105,7 +105,7 @@ export function AuthProvider({ children }) {
       }
       
       const url = `${API_BASE_URL}/api/proxy?endpoint=result/${taskId}`;
-      console.log('💎 Full URL:', url);
+      
       
       const fetchOptions = {
         method: 'GET',
@@ -115,13 +115,13 @@ export function AuthProvider({ children }) {
         }
       };
       
-      console.log('💎 Fetch options:', fetchOptions);
-      console.log('💎 Making fetch request...');
+      
+      
       
       try {
         const response = await fetch(url, fetchOptions);
-        console.log('💎 Response received:', response.status, response.statusText);
-        console.log('💎 Response ok:', response.ok);
+        
+        
         
         if (!response.ok) {
           console.error('💎 Response not ok:', response.status);
@@ -132,7 +132,7 @@ export function AuthProvider({ children }) {
         }
         
         const data = await response.json();
-        console.log('💎 Result data:', data);
+        
         return data;
         
       } catch (error) {
@@ -149,14 +149,14 @@ export function AuthProvider({ children }) {
 // Replace uploadCall function:
 
 const uploadCall = async (formData) => {
-    console.log('📤 uploadCall called with formData');
-    console.log('📤 FormData entries:');
+    
+    
     for (let [key, value] of formData.entries()) {
-        console.log(`📤   ${key}:`, value instanceof File ? `File: ${value.name} (${value.size} bytes)` : value);
+        
     }
     
     const url = `${API_BASE_URL}/api/proxy?endpoint=submit`;
-    console.log('📤 Upload URL:', url);
+    
     
     const fetchOptions = {
         method: 'POST',
@@ -168,12 +168,12 @@ const uploadCall = async (formData) => {
         body: formData
     };
     
-    console.log('📤 Fetch options:', { method: fetchOptions.method, headers: fetchOptions.headers });
-    console.log('📤 Making fetch request...');
+    
+    
     
     try {
         const response = await fetch(url, fetchOptions);
-        console.log('📤 Response received:', response.status, response.statusText);
+        
         return response;
     } catch (error) {
         console.error('📤 uploadCall error:', error);
@@ -192,7 +192,7 @@ const uploadCall = async (formData) => {
     }
 
     try {
-      console.log('🔍 Validating token:', checkToken.substring(0, 20) + '...');
+      
       
       // ✅ Direct fetch call to avoid circular dependency
       const url = `${API_BASE_URL}/api/proxy?endpoint=validate-token`;
@@ -204,11 +204,11 @@ const uploadCall = async (formData) => {
         }
       });
 
-      console.log('🔍 Token validation response:', response.status);
+      
 
       if (response.ok) {
         const userData = await response.json();
-        console.log('🔍 User data:', userData);
+        
         setCurrentUser(userData);
         setToken(checkToken);
         setIsAuthenticated(true);
@@ -216,7 +216,7 @@ const uploadCall = async (formData) => {
         setLoading(false);
         return true;
       } else {
-        console.log('🔍 Token validation failed');
+        
         localStorage.removeItem('token');
         setToken(null);
         setCurrentUser(null);
@@ -241,7 +241,7 @@ const uploadCall = async (formData) => {
   
   // Login function
   const login = async (username, password) => {
-    console.log('🔍 Login attempt:', { username });
+    
     
     try {
       const response = await apiCall('login', {
@@ -249,7 +249,7 @@ const uploadCall = async (formData) => {
         body: { username, password }
       });
       
-      console.log('🔍 Login response status:', response.status);
+      
       
       if (response.status === 401) {
         return false;
@@ -257,7 +257,7 @@ const uploadCall = async (formData) => {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 Login data:', data);
+        
         const newToken = data.access_token;
         
         const isValid = await validateToken(newToken);
