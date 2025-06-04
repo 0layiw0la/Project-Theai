@@ -10,9 +10,9 @@ export default function UploadPage() {
     const location = useLocation();
     const { firstName, lastName, tel, sex } = location.state || {};
 
-    const { token } = useAuth();
+    const { token, uploadCall } = useAuth(); // ✅ Add uploadCall
     const [uploading, setUploading] = useState(false);
-    const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
+    // ❌ REMOVED: const API_BASE_URL = import.meta.env.VITE_APP_API_URL;
 
     // Modal and Camera state (only for mobile)
     const [showModal, setShowModal] = useState(false);
@@ -54,13 +54,8 @@ export default function UploadPage() {
         formData.append("date", date);
 
         try {
-            const response = await fetch(`${API_BASE_URL}/submit`, {
-                method: "POST",
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
-                body: formData
-            });
+            // ✅ CHANGED: Use uploadCall instead of direct fetch
+            const response = await uploadCall(formData);
 
             if (response.status === 401) {
                 localStorage.removeItem('token');
