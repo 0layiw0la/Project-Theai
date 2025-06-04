@@ -128,7 +128,7 @@ export default function TasksPage() {
             <Logo showHomeButton={true}/>
             <div className="p-10">
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl md:text-7xl font-[500] text-main">Existing Tasks</h1>
+                    <h1 className="text-2xl md:text-7xl font-[500] text-main">Existing Tests</h1>
                     <div>
                         <button 
                             className="px-4 py-2 bg-main text-white rounded-md hover:bg-complementary"
